@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question or Discussion
+    url: https://github.com/example42/saidata-gen/discussions
+    about: Ask questions and discuss with other community members
+  - name: Documentation
+    url: https://github.com/example42/saidata-gen/wiki
+    about: Check our documentation for answers to common questions

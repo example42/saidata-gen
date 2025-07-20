@@ -1,0 +1,13 @@
+# Default owners for everything in the repo
+* @yourusername
+
+# Specific ownership for certain directories
+/saidata_gen/core/ @yourusername
+/saidata_gen/fetcher/ @yourusername
+/saidata_gen/generator/ @yourusername
+/saidata_gen/validation/ @yourusername
+/saidata_gen/rag/ @yourusername
+/saidata_gen/ml/ @yourusername
+
+# Ownership for CI/CD and GitHub workflows
+/.github/ @yourusername
