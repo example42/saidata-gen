@@ -1,0 +1,373 @@
+# Comprehensive Prompt Templates for RAG Integration
+# These templates provide consistent and effective prompts for different metadata enhancement tasks
+
+# System prompts for different providers
+system_prompts:
+  openai:
+    general: |
+      You are a software metadata expert with deep knowledge of package managers, 
+      software ecosystems, and technical documentation. Your responses should be 
+      accurate, concise, and follow structured formats.
+    
+    technical: |
+      You are a technical analyst specializing in software architecture, dependencies, 
+      and system integration. Focus on technical accuracy and provide detailed 
+      technical information when available.
+  
+  anthropic:
+    general: |
+      I need you to act as a software documentation specialist. You have expertise 
+      in various software packages, their purposes, and technical details. Please 
+      provide accurate and helpful information while being concise and structured.
+    
+    technical: |
+      You are analyzing software packages from a technical perspective. Focus on 
+      architecture, dependencies, compatibility, and technical specifications. 
+      Be precise and factual in your analysis.
+
+# Task-specific prompt templates
+task_prompts:
+  
+  # Description Enhancement
+  description_enhancement:
+    openai: |
+      Enhance the following software description to be more comprehensive and informative:
+      
+      Software Name: {software_name}
+      Current Description: {current_description}
+      Package Information: {package_info}
+      Repository Data: {repo_data}
+      
+      Requirements:
+      1. Explain what the software does clearly
+      2. Mention key features and capabilities
+      3. Identify target users or use cases
+      4. Keep it between 100-300 words
+      5. Maintain technical accuracy
+      6. Use neutral, professional tone
+      
+      Enhanced Description:
+    
+    anthropic: |
+      I need you to improve this software description:
+      
+      Software: {software_name}
+      Current description: {current_description}
+      Additional context: {package_info}
+      
+      Please provide an enhanced description that:
+      - Clearly explains the software's purpose
+      - Highlights main features
+      - Mentions typical use cases
+      - Is informative but concise (100-300 words)
+      - Maintains accuracy and neutral tone
+    
+    local: |
+      Improve this software description:
+      
+      Name: {software_name}
+      Description: {current_description}
+      Info: {package_info}
+      
+      Make it clear and informative. Explain:
+      - What it does
+      - Key features
+      - Who uses it
+      
+      Keep it under 200 words.
+
+  # Software Categorization
+  categorization:
+    openai: |
+      Analyze and categorize the following software package:
+      
+      Software Name: {software_name}
+      Description: {description}
+      Package Details: {package_details}
+      Dependencies: {dependencies}
+      
+      Provide categorization in this exact format:
+      
+      Primary Category: [Choose from: Development, System, Network, Security, Multimedia, Office, Games, Education, Utilities, Server, Database, Web, Mobile, AI/ML]
+      Subcategory: [More specific category within the primary]
+      Tags: [3-5 relevant tags, comma-separated]
+      Technical Type: [library, framework, tool, application, service, runtime]
+      
+      Base your categorization on the software's primary function and typical usage patterns.
+    
+    anthropic: |
+      Please categorize this software package:
+      
+      Software: {software_name}
+      Description: {description}
+      Technical details: {package_details}
+      
+      I need you to provide:
+      
+      1. Primary Category (select the most appropriate):
+         - Development (programming tools, IDEs, compilers)
+         - System (OS utilities, system administration)
+         - Network (networking tools, protocols)
+         - Security (security tools, encryption)
+         - Multimedia (audio, video, graphics)
+         - Office (productivity, documents)
+         - Games (gaming, entertainment)
+         - Education (learning, reference)
+         - Utilities (general tools, helpers)
+         - Server (server software, daemons)
+         - Database (data storage, management)
+         - Web (web servers, browsers, web tools)
+         - Mobile (mobile development, apps)
+         - AI/ML (artificial intelligence, machine learning)
+      
+      2. Subcategory: More specific classification
+      3. Tags: 3-5 descriptive tags
+      4. Technical Type: library/framework/tool/application/service
+    
+    local: |
+      Categorize this software:
+      
+      Name: {software_name}
+      Description: {description}
+      
+      Provide:
+      - Primary category
+      - Subcategory
+      - 3 tags
+      - Type (library/tool/app/service)
+      
+      Categories: Development, System, Network, Security, Multimedia, Office, Games, Education, Utilities, Server, Database, Web
+
+  # Missing Field Completion
+  missing_fields:
+    openai: |
+      Complete missing metadata fields for this software package. Only suggest values you are confident about.
+      
+      Software Name: {software_name}
+      Existing Data: {existing_data}
+      Missing Fields: {missing_fields}
+      Available Context: {context}
+      
+      For each missing field, provide:
+      - Field name
+      - Suggested value
+      - Confidence level (high/medium/low)
+      - Brief reasoning
+      
+      If you cannot confidently suggest a value, respond with "insufficient information".
+      
+      Focus on these field types:
+      - URLs (website, documentation, source, issues)
+      - License information
+      - Platform compatibility
+      - Default ports or services
+      - Configuration directories
+      
+      Response format:
+      Field: [field_name]
+      Value: [suggested_value]
+      Confidence: [high/medium/low]
+      Reasoning: [brief explanation]
+    
+    anthropic: |
+      Help me complete missing metadata for this software:
+      
+      Software: {software_name}
+      Current data: {existing_data}
+      Missing fields: {missing_fields}
+      
+      For each missing field, please provide:
+      1. Your suggested value (if confident)
+      2. Confidence level (high/medium/low)
+      3. Reasoning for the suggestion
+      
+      Only suggest values you're reasonably confident about. If unsure, indicate "insufficient information".
+      
+      Common fields to complete:
+      - website URL
+      - documentation URL
+      - source code URL
+      - license type
+      - supported platforms
+      - default configuration paths
+    
+    local: |
+      Complete missing fields for: {software_name}
+      
+      Current data: {existing_data}
+      Missing: {missing_fields}
+      
+      For each missing field, provide:
+      - Suggested value
+      - Confidence (high/medium/low)
+      - Reason
+      
+      Only suggest if confident. Say "unknown" if unsure.
+
+  # Technical Analysis
+  technical_analysis:
+    openai: |
+      Perform a technical analysis of this software package:
+      
+      Software Name: {software_name}
+      Description: {description}
+      Package Information: {package_info}
+      Dependencies: {dependencies}
+      Repository Data: {repo_data}
+      
+      Analyze and provide information about:
+      
+      1. Programming Language(s): Primary language(s) used
+      2. Architecture Type: CLI tool, GUI application, web service, library, framework, etc.
+      3. Platform Compatibility: Supported operating systems and architectures
+      4. Key Dependencies: Important dependencies and their purposes
+      5. Installation Complexity: Simple, moderate, or complex installation
+      6. Resource Requirements: Memory, CPU, disk space (if determinable)
+      7. Configuration: Configuration file locations and formats
+      8. Integration Points: How it integrates with other systems
+      
+      Provide specific, factual information. If something cannot be determined, state "not determinable from available data".
+    
+    anthropic: |
+      I need a technical analysis of this software:
+      
+      Software: {software_name}
+      Description: {description}
+      Package details: {package_info}
+      Dependencies: {dependencies}
+      
+      Please analyze:
+      
+      1. Programming language(s) used
+      2. Software type (CLI/GUI/web service/library/etc.)
+      3. Platform support (Linux/Windows/macOS/etc.)
+      4. Key dependencies and their roles
+      5. Installation complexity level
+      6. Typical resource usage (if known)
+      7. Configuration approach
+      8. Common integration patterns
+      
+      Be specific and technical. If information isn't available, please indicate that clearly.
+    
+    local: |
+      Analyze this software technically:
+      
+      Name: {software_name}
+      Description: {description}
+      Info: {package_info}
+      
+      Provide:
+      - Programming language
+      - Type (CLI/GUI/web/library)
+      - Platforms supported
+      - Main dependencies
+      - Installation difficulty
+      - Resource needs
+      
+      Be factual and brief.
+
+  # License Normalization
+  license_normalization:
+    openai: |
+      Normalize and standardize the license information for this software:
+      
+      Software Name: {software_name}
+      Raw License Data: {raw_license}
+      Package Information: {package_info}
+      
+      Tasks:
+      1. Identify the correct SPDX license identifier
+      2. Provide the full license name
+      3. Categorize as: permissive, copyleft, proprietary, or other
+      4. Note any special conditions or dual licensing
+      
+      Format your response as:
+      SPDX ID: [identifier]
+      Full Name: [complete license name]
+      Category: [permissive/copyleft/proprietary/other]
+      Notes: [any special conditions]
+      
+      If the license cannot be determined, respond with "unknown" for SPDX ID.
+    
+    anthropic: |
+      Please normalize this license information:
+      
+      Software: {software_name}
+      License data: {raw_license}
+      
+      I need:
+      1. SPDX license identifier (if applicable)
+      2. Full license name
+      3. License category (permissive/copyleft/proprietary/other)
+      4. Any special notes about the licensing
+      
+      If the license is unclear or unknown, please indicate that.
+    
+    local: |
+      Normalize license for: {software_name}
+      Raw license: {raw_license}
+      
+      Provide:
+      - SPDX ID
+      - Full name
+      - Type (permissive/copyleft/proprietary)
+      - Notes
+      
+      Say "unknown" if unclear.
+
+# Quality control prompts
+quality_control:
+  validation_prompt: |
+    Review this generated metadata for accuracy and completeness:
+    
+    {generated_metadata}
+    
+    Check for:
+    1. Factual accuracy
+    2. Completeness of required fields
+    3. Consistency across fields
+    4. Proper formatting
+    5. Realistic values
+    
+    Provide feedback on any issues found.
+  
+  confidence_scoring: |
+    Rate the confidence level of this generated metadata:
+    
+    {metadata}
+    
+    Provide confidence scores (0.0-1.0) for:
+    - Description accuracy
+    - Categorization appropriateness
+    - Technical details correctness
+    - URL validity likelihood
+    - Overall metadata quality
+    
+    Explain your reasoning for each score.
+
+# Few-shot examples for better results
+examples:
+  description_enhancement:
+    input: |
+      Software: nginx
+      Current: "HTTP server"
+      Info: "High-performance web server and reverse proxy"
+    
+    output: |
+      nginx is a high-performance HTTP server, reverse proxy, and load balancer 
+      known for its stability, rich feature set, simple configuration, and low 
+      resource consumption. It serves static content efficiently, handles many 
+      concurrent connections, and is commonly used to proxy requests to application 
+      servers. Popular among web developers and system administrators for building 
+      scalable web architectures.
+  
+  categorization:
+    input: |
+      Software: nginx
+      Description: "High-performance HTTP server and reverse proxy"
+    
+    output: |
+      Primary Category: Server
+      Subcategory: Web Server
+      Tags: http, proxy, load-balancer, web-server, reverse-proxy
+      Technical Type: application

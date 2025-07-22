@@ -1,0 +1,152 @@
+# Local Model RAG Configuration for Saidata Generator
+# Configuration for using local models (Ollama, etc.) for enhanced metadata generation
+
+# RAG Engine Configuration
+rag:
+  enabled: true
+  provider: "local"
+  
+  # Local model settings
+  local:
+    base_url: "http://localhost:11434"  # Default Ollama endpoint
+    model: "llama2:13b"  # Or codellama, mistral, etc.
+    
+    # Model parameters
+    temperature: 0.2
+    max_tokens: 1500
+    top_p: 0.9
+    top_k: 40
+    repeat_penalty: 1.1
+    
+    # Request settings
+    timeout: 120  # Local models may be slower
+    max_retries: 2
+    retry_delay: 5
+    
+    # Connection settings
+    keep_alive: true
+    stream: false
+
+  # Fallback configuration
+  fallback:
+    enabled: true
+    use_traditional_sources: true
+    confidence_threshold: 0.4  # Lower threshold for local models
+
+  # Enhancement settings (conservative for local models)
+  enhancement:
+    description_enhancement: true
+    categorization: true
+    missing_field_completion: false  # May be less reliable
+    technical_analysis: true
+
+  # Confidence scoring (adjusted for local models)
+  confidence:
+    ai_generated_content: 0.6
+    enhanced_descriptions: 0.7
+    auto_categorization: 0.65
+    technical_analysis: 0.6
+
+# Optimized prompts for local models (shorter, more direct)
+prompts:
+  description_enhancement: |
+    Enhance this software description. Be concise and accurate.
+    
+    Software: {software_name}
+    Current info: {basic_info}
+    
+    Write a clear description explaining:
+    - What it does
+    - Main features
+    - Who uses it
+    
+    Keep it under 150 words.
+
+  categorization: |
+    Categorize this software:
+    
+    Name: {software_name}
+    Description: {description}
+    
+    Provide:
+    - Primary category
+    - Subcategory  
+    - 3 tags
+    
+    Categories: Development, System, Network, Security, Multimedia, Office, Games, Education, Utilities, Server, Database, Web
+
+  technical_analysis: |
+    Analyze this software technically:
+    
+    Software: {software_name}
+    Info: {package_info}
+    
+    Identify:
+    - Programming language
+    - Type (CLI/GUI/web/library)
+    - Platform support
+    - Main purpose
+    
+    Be brief and factual.
+
+# Performance optimizations for local models
+performance:
+  batch_requests: false  # Process one at a time
+  parallel_processing: false
+  cache_responses: true
+  cache_ttl: 7200  # 2 hours
+  
+  # Model-specific optimizations
+  context_length: 2048  # Shorter context for speed
+  use_gpu: true
+  gpu_layers: 35  # Adjust based on your GPU
+
+# Quality control (relaxed for local models)
+quality_control:
+  max_description_length: 300
+  min_description_length: 30
+  
+  validation:
+    check_coherence: true
+    verify_relevance: true
+    filter_hallucinations: true
+
+# Local model management
+model_management:
+  auto_pull_models: false
+  model_variants:
+    fast: "llama2:7b"
+    balanced: "llama2:13b"
+    quality: "llama2:70b"
+  
+  fallback_models:
+    - "codellama:7b"
+    - "mistral:7b"
+    - "phi:2.7b"
+
+# Resource management
+resources:
+  max_memory_usage: "8GB"
+  max_cpu_usage: 80  # Percentage
+  timeout_per_request: 180
+  
+  # Monitoring
+  monitor_performance: true
+  log_resource_usage: true
+
+# Alternative local providers
+alternative_providers:
+  llamacpp:
+    enabled: false
+    endpoint: "http://localhost:8080"
+    model_path: "/models/llama-2-13b.gguf"
+  
+  textgen_webui:
+    enabled: false
+    endpoint: "http://localhost:5000"
+    api_key: null
+  
+  vllm:
+    enabled: false
+    endpoint: "http://localhost:8000"
+    model: "meta-llama/Llama-2-13b-hf"

@@ -274,3 +274,7 @@ class SearchRanker:
         
         # Average the diversity metrics
         return (provider_diversity + name_diversity) / 2
+
+
+# Alias for backward compatibility
+ResultRanker = SearchRanker

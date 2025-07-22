@@ -21,26 +21,54 @@ saidata-gen is a comprehensive Python package that automates the creation, valid
 
 ## Installation
 
+### PyPI Package (Recommended)
+
 ```bash
+# Basic installation
 pip install saidata-gen
-```
 
-For RAG capabilities:
-
-```bash
+# With AI/RAG capabilities
 pip install saidata-gen[rag]
-```
 
-For ML capabilities:
-
-```bash
+# With ML capabilities
 pip install saidata-gen[ml]
+
+# With all features
+pip install saidata-gen[rag,ml]
 ```
 
-For development:
+### Docker Container
 
 ```bash
-pip install saidata-gen[dev]
+# Pull and run
+docker pull saidata/saidata-gen:latest
+docker run --rm -v $(pwd):/workspace saidata/saidata-gen:latest generate nginx
+
+# Or use in docker-compose
+docker-compose run saidata-gen generate nginx
+```
+
+### Standalone Binary
+
+Download the appropriate binary for your platform from the [releases page](https://github.com/sai/saidata-gen/releases):
+
+```bash
+# Linux/macOS
+curl -L https://github.com/sai/saidata-gen/releases/latest/download/saidata-gen-linux-x86_64 -o saidata-gen
+chmod +x saidata-gen
+./saidata-gen --help
+
+# Windows
+curl -L https://github.com/sai/saidata-gen/releases/latest/download/saidata-gen-windows-x86_64.exe -o saidata-gen.exe
+saidata-gen.exe --help
+```
+
+### Development Installation
+
+```bash
+git clone https://github.com/sai/saidata-gen.git
+cd saidata-gen
+pip install -e .[dev,rag,ml]
 ```
 
 ## Usage

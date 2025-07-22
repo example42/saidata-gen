@@ -208,6 +208,10 @@ class SchemaValidator:
         issues.extend(additional_issues)
         suggestions.extend(additional_suggestions)
         
+        # Collect all suggestions from issues
+        for issue in additional_issues:
+            suggestions.extend(issue.suggestions)
+        
         # Calculate quality and completeness scores
         quality_score = self._calculate_quality_score(data, issues)
         completeness_score = self._calculate_completeness_score(data)
@@ -485,9 +489,10 @@ class SchemaValidator:
         issues = []
         suggestions = []
         
-        if "urls" not in data or not data["urls"]:
+        # Only warn about URLs if they're completely missing (not just empty)
+        if "urls" not in data:
             issues.append(EnhancedValidationIssue(
-                level=ValidationLevel.WARNING,
+                level=ValidationLevel.INFO,  # Reduced to INFO level
                 message="No URLs provided",
                 path="urls",
                 schema_path="",
@@ -499,7 +504,7 @@ class SchemaValidator:
                     reason='Add relevant URLs for the software',
                     confidence=0.6
                 )],
-                severity_score=0.3,
+                severity_score=0.2,  # Reduced severity
                 auto_fixable=False
             ))
         elif isinstance(data["urls"], dict):
@@ -523,8 +528,8 @@ class SchemaValidator:
                         auto_fixable=True
                     ))
             
-            # Check for missing important URLs
-            if "website" not in data["urls"] or not data["urls"]["website"]:
+            # Only suggest website URL if no URLs are provided at all
+            if not any(data["urls"].values()):
                 issues.append(EnhancedValidationIssue(
                     level=ValidationLevel.INFO,
                     message="Website URL is not provided",
@@ -584,9 +589,10 @@ class SchemaValidator:
                     severity_score=0.3,
                     auto_fixable=True
                 ))
-            elif data["category"]["default"] not in self.common_categories:
-                close_matches = self._find_close_matches(data["category"]["default"], self.common_categories)
-                if close_matches:
+            elif data["category"]["default"].lower() not in self.common_categories:
+                # Only suggest if it's very different from common categories
+                close_matches = self._find_close_matches(data["category"]["default"].lower(), self.common_categories)
+                if close_matches and self._string_distance(data["category"]["default"].lower(), close_matches[0]) > 0.5:
                     issues.append(EnhancedValidationIssue(
                         level=ValidationLevel.INFO,
                         message=f"Category '{data['category']['default']}' is not a common category",
@@ -929,11 +935,46 @@ class SchemaValidator:
         }
         return defaults.get(property_name, None)
     
-    def _find_close_matches(self, value: str, candidates: set, threshold: float = 0.6) -> List[str]:
+    def _find_close_matches(self, value: str, candidates: set, threshold: float = 0.3) -> List[str]:
         """Find close matches for a value in a set of candidates."""
         import difflib
-        matches = difflib.get_close_matches(value, candidates, n=3, cutoff=threshold)
+        matches = difflib.get_close_matches(value, list(candidates), n=3, cutoff=threshold)
         return matches
+    
+    def _string_distance(self, s1: str, s2: str) -> float:
+        """Calculate normalized edit distance between two strings."""
+        if not s1 or not s2:
+            return 1.0
+        
+        # Simple Levenshtein distance implementation
+        len1, len2 = len(s1), len(s2)
+        if len1 == 0:
+            return len2
+        if len2 == 0:
+            return len1
+        
+        # Create matrix
+        matrix = [[0] * (len2 + 1) for _ in range(len1 + 1)]
+        
+        # Initialize first row and column
+        for i in range(len1 + 1):
+            matrix[i][0] = i
+        for j in range(len2 + 1):
+            matrix[0][j] = j
+        
+        # Fill matrix
+        for i in range(1, len1 + 1):
+            for j in range(1, len2 + 1):
+                cost = 0 if s1[i-1] == s2[j-1] else 1
+                matrix[i][j] = min(
+                    matrix[i-1][j] + 1,      # deletion
+                    matrix[i][j-1] + 1,      # insertion
+                    matrix[i-1][j-1] + cost  # substitution
+                )
+        
+        # Normalize by max length
+        max_len = max(len1, len2)
+        return matrix[len1][len2] / max_len if max_len > 0 else 0.0
     
     def _is_valid_url(self, url: str) -> bool:
         """Check if a URL is valid."""
@@ -1019,3 +1060,140 @@ class SchemaValidator:
                 coverage[field] = isinstance(data[field], dict) and bool(data[field])
         
         return coverage
+    
+    def _string_distance(self, s1: str, s2: str) -> float:
+        """Calculate normalized edit distance between two strings."""
+        if not s1 or not s2:
+            return 1.0
+        
+        # Simple Levenshtein distance implementation
+        len1, len2 = len(s1), len(s2)
+        if len1 == 0:
+            return len2 / len2 if len2 > 0 else 0.0
+        if len2 == 0:
+            return len1 / len1 if len1 > 0 else 0.0
+        
+        # Create matrix
+        matrix = [[0] * (len2 + 1) for _ in range(len1 + 1)]
+        
+        # Initialize first row and column
+        for i in range(len1 + 1):
+            matrix[i][0] = i
+        for j in range(len2 + 1):
+            matrix[0][j] = j
+        
+        # Fill matrix
+        for i in range(1, len1 + 1):
+            for j in range(1, len2 + 1):
+                if s1[i-1] == s2[j-1]:
+                    cost = 0
+                else:
+                    cost = 1
+                
+                matrix[i][j] = min(
+                    matrix[i-1][j] + 1,      # deletion
+                    matrix[i][j-1] + 1,      # insertion
+                    matrix[i-1][j-1] + cost  # substitution
+                )
+        
+        # Normalize by max length
+        max_len = max(len1, len2)
+        return matrix[len1][len2] / max_len if max_len > 0 else 0.0
+    
+    def _get_value_at_path(self, data: Dict[str, Any], path: str) -> Any:
+        """Get value at a specific path in the data."""
+        if not path:
+            return data
+        
+        parts = path.split('.')
+        current = data
+        
+        for part in parts:
+            if '[' in part and ']' in part:
+                # Handle array access like "platforms[0]"
+                key, index_str = part.split('[')
+                index = int(index_str.rstrip(']'))
+                
+                if key and key in current:
+                    current = current[key]
+                
+                if isinstance(current, list) and 0 <= index < len(current):
+                    current = current[index]
+                else:
+                    return None
+            else:
+                if isinstance(current, dict) and part in current:
+                    current = current[part]
+                else:
+                    return None
+        
+        return current
+    
+    def _set_value_at_path(self, data: Dict[str, Any], path: str, value: Any) -> None:
+        """Set value at a specific path in the data."""
+        if not path:
+            return
+        
+        parts = path.split('.')
+        current = data
+        
+        for i, part in enumerate(parts[:-1]):
+            if '[' in part and ']' in part:
+                # Handle array access
+                key, index_str = part.split('[')
+                index = int(index_str.rstrip(']'))
+                
+                if key:
+                    if key not in current:
+                        current[key] = []
+                    current = current[key]
+                
+                # Extend list if necessary
+                while len(current) <= index:
+                    current.append({})
+                
+                current = current[index]
+            else:
+                if part not in current:
+                    current[part] = {}
+                current = current[part]
+        
+        # Set the final value
+        final_part = parts[-1]
+        if '[' in final_part and ']' in final_part:
+            key, index_str = final_part.split('[')
+            index = int(index_str.rstrip(']'))
+            
+            if key:
+                if key not in current:
+                    current[key] = []
+                target_list = current[key]
+            else:
+                target_list = current
+            
+            # Extend list if necessary
+            while len(target_list) <= index:
+                target_list.append(None)
+            
+            target_list[index] = value
+        else:
+            current[final_part] = value
+    
+    def _is_valid_url(self, url: str) -> bool:
+        """Check if a URL is valid."""
+        try:
+            result = urlparse(str(url))
+            return all([result.scheme, result.netloc])
+        except Exception:
+            return False
+    
+    def _fix_url(self, url: str) -> str:
+        """Attempt to fix a URL by adding missing protocol."""
+        if not url:
+            return url
+        
+        url_str = str(url)
+        if not url_str.startswith(('http://', 'https://')):
+            return f'https://{url_str}'
+        
+        return url_str
