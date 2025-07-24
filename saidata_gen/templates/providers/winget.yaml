@@ -1,42 +1,30 @@
 # Template for Windows Package Manager (winget) packages
 packages:
   winget:
-    name: $software_name
+    name: "{{ software_name }}"
     version: latest
-    install_options: ~
+    install_options: null
 
-$if: current_provider == "winget"
 services:
   default:
-    name: $software_name
+    name: "{{ software_name }}"
     enabled: true
     status: enabled
-$endif
 
 directories:
   config:
-    path: C:\\ProgramData\\$software_name
+    path: "C:\\ProgramData\\{{ software_name }}"
     owner: Administrator
     group: Administrators
     mode: "0644"
-  
-  $if: software_name.endswith("service")
-  service_config:
-    path: C:\\ProgramData\\$software_name\\service
-    owner: Administrator
-    group: Administrators
-    mode: "0644"
-  $else
   app_config:
-    path: C:\\ProgramData\\$software_name\\config
+    path: "C:\\ProgramData\\{{ software_name }}\\config"
     owner: Administrator
     group: Administrators
     mode: "0644"
-  $endif
 
-# Provider override example
-$provider_override: urls.website
-https://winget.run/pkg/$software_name
+urls:
+  website: "https://winget.run/pkg/{{ software_name }}"
 
 platforms:
   - windows

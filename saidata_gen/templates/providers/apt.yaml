@@ -1,19 +1,19 @@
 # Template for APT packages
 packages:
   apt:
-    name: $software_name
+    name: "{{ software_name }}"
     version: latest
-    install_options: ~
+    install_options: null
 
 services:
   default:
-    name: $software_name
+    name: "{{ software_name }}"
     enabled: true
     status: enabled
 
 directories:
   config:
-    path: /etc/$software_name
+    path: "/etc/{{ software_name }}"
     owner: root
     group: root
     mode: "0644"

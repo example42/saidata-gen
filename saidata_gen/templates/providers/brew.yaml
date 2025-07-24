@@ -1,43 +1,25 @@
 # Template for Homebrew packages
 packages:
   brew:
-    name: $software_name
+    name: "{{ software_name }}"
     version: latest
-    install_options: ~
+    install_options: null
 
-$if: current_provider == "brew"
 services:
   default:
-    name: $software_name
+    name: "{{ software_name }}"
     enabled: true
     status: enabled
-$endif
 
-$platform: macos
 directories:
   config:
-    path: /usr/local/etc/$software_name
-    owner: $${current_user | root}
+    path: "/usr/local/etc/{{ software_name }}"
+    owner: root
     group: admin
     mode: "0644"
-$endif
 
-$platform: linux
-directories:
-  config:
-    path: /home/linuxbrew/.linuxbrew/etc/$software_name
-    owner: $${current_user | root}
-    group: $${current_user | root}
-    mode: "0644"
-$endif
-
-# Provider override example
-$provider_override: urls.website
-https://brew.sh/formula/$software_name
-
-# Include example
-$include: common_urls
-  website: https://brew.sh/formula/$software_name
+urls:
+  website: "https://brew.sh/formula/{{ software_name }}"
 
 platforms:
   - macos

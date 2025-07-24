@@ -624,8 +624,9 @@ class TemplateEngine:
             Data with variables substituted.
         """
         if isinstance(data, str):
-            # Substitute simple variables like $variable_name
             result = data
+            
+            # Substitute simple variables like $variable_name
             for var_name, var_value in context.items():
                 if isinstance(var_value, (str, int, float, bool)):
                     result = result.replace(f"${var_name}", str(var_value))
@@ -651,6 +652,28 @@ class TemplateEngine:
                 
                 if value is not None:
                     result = result.replace(f"${{{match}}}", str(value))
+            
+            # Also handle Jinja2-style {{ variable }} syntax
+            jinja_pattern = r'\{\{\s*([^}]+?)\s*\}\}'
+            
+            def replace_jinja_var(match):
+                var_expr = match.group(1).strip()
+                if '|' in var_expr:
+                    # Handle expressions with default values
+                    expr, default = var_expr.split('|', 1)
+                    expr = expr.strip()
+                    default = default.strip()
+                    
+                    value = self._get_nested_value(context, expr)
+                    if value is None:
+                        value = default
+                else:
+                    # Handle simple variable paths
+                    value = self._get_nested_value(context, var_expr)
+                
+                return str(value) if value is not None else match.group(0)
+            
+            result = re.sub(jinja_pattern, replace_jinja_var, result)
             
             return result
         elif isinstance(data, dict):

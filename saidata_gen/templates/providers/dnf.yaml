@@ -1,41 +1,25 @@
 # Template for DNF packages
 packages:
   dnf:
-    name: $software_name
+    name: "{{ software_name }}"
     version: latest
-    install_options: ~
+    install_options: null
 
 services:
   default:
-    name: $software_name
+    name: "{{ software_name }}"
     enabled: true
     status: enabled
 
 directories:
   config:
-    path: /etc/$software_name
+    path: "/etc/{{ software_name }}"
     owner: root
     group: root
     mode: "0644"
-  
-# Example of loop directive
-$for: version in ['el7', 'el8', 'el9']
-  repo_$version:
-    name: $software_name-$version
-    baseurl: "https://download.example.com/$software_name/$version"
-    enabled: true
-$endfor
 
-# Example of function call directive
-$function: lower(software_name)
-  lowercase_name
-
-# Provider override example
-$provider_override: urls.website
-https://packages.fedoraproject.org/pkgs/$software_name
-
-# Include example
-$include: common_urls
+urls:
+  website: "https://packages.fedoraproject.org/pkgs/{{ software_name }}"
 
 platforms:
   - linux

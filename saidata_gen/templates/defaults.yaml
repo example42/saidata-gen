@@ -3,58 +3,58 @@ version: 0.1
 
 packages:
   default:
-    name: $software_name
+    name: "{{ software_name }}"
     version: latest
-    install_options: ~ # Default is undefined.
+    install_options: null # Default is undefined.
   dev:
-    name: $software_name-dev
+    name: "{{ software_name }}-dev"
     version: latest
-    install_options: ~ # Default is undefined.
+    install_options: null # Default is undefined.
   doc:
-    name: $software_name-doc
+    name: "{{ software_name }}-doc"
     version: latest
-    install_options: ~ # Default is undefined.
+    install_options: null # Default is undefined.
 
 services:
   default:
-    name: $software_name
+    name: "{{ software_name }}"
     enabled: false
-    status: ~
+    status: null
 
 directories:
   config: # Main configuration directory
-    path: /etc/$software_name
+    path: "/etc/{{ software_name }}"
     owner: root
     group: root
     mode: "0755"
   dotconf: # Dot conf directory, with separated configuration files, if applicable
-    path: /etc/$software_name/conf.d
+    path: "/etc/{{ software_name }}/conf.d"
     owner: root
     group: root
     mode: "0755"
   log:
-    path: /var/log/$software_name
+    path: "/var/log/{{ software_name }}"
     owner: root
     group: root
     mode: "0755"
-  data: ~ # Main data directory (what you need to backup), default is undefined
+  data: null # Main data directory (what you need to backup), default is undefined
 
 processes:
   default: 
-    name: $software_name
-    command: ~
-    args: ~
+    name: "{{ software_name }}"
+    command: null
+    args: null
 
 ports:
   default:
-    number: ~
+    number: null
     protocol: tcp
-    service: ~
+    service: null
 
 containers:
   upstream:
-    name: $software_name
-    image: $software_name
+    name: "{{ software_name }}"
+    image: "{{ software_name }}"
     tag: latest
 
 charts: {}
@@ -62,26 +62,26 @@ charts: {}
 repos: {}
 
 urls:
-  website: ~
-  sbom: ~
-  issues: ~
-  documentation: ~
-  support: ~
-  source: ~
-  license: ~
-  changelog: ~
-  download: ~
-  icon: ~
+  website: null
+  sbom: null
+  issues: null
+  documentation: null
+  support: null
+  source: null
+  license: null
+  changelog: null
+  download: null
+  icon: null
 
-language: ~ # Main programming language
+language: null # Main programming language
 
-description: ~ # Default is undefined.
+description: null # Default is undefined.
 
 category:
-  default: ~ # Default is undefined.
-  sub: ~ # Default is undefined.
+  default: null # Default is undefined.
+  sub: null # Default is undefined.
   tags: [] # Default is empty list.
 
-license: ~ # Default is undefined.
+license: null # Default is undefined.
 
 platforms: [] # Array of supported platforms, e.g. [linux, windows, macos]
