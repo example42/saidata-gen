@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import yaml
 
+from saidata_gen.core.aggregation import DataAggregator
 from saidata_gen.core.interfaces import (
     MetadataResult, PackageInfo, SaidataMetadata, ValidationResult
 )
@@ -33,7 +34,8 @@ class MetadataGenerator:
     def __init__(
         self,
         template_engine: Optional[TemplateEngine] = None,
-        schema_path: Optional[str] = None
+        schema_path: Optional[str] = None,
+        data_aggregator: Optional[DataAggregator] = None
     ):
         """
         Initialize the metadata generator.
@@ -41,8 +43,10 @@ class MetadataGenerator:
         Args:
             template_engine: Template engine to use. If None, creates a new one.
             schema_path: Path to the saidata schema. If None, uses the default schema.
+            data_aggregator: Data aggregator to use. If None, creates a new one.
         """
         self.template_engine = template_engine or TemplateEngine()
+        self.data_aggregator = data_aggregator or DataAggregator()
         
         if schema_path is None:
             # Use the default schema path
@@ -74,17 +78,19 @@ class MetadataGenerator:
         # Apply templates
         metadata = self.template_engine.apply_template(software_name, metadata, providers)
         
-        # Merge data from sources
-        metadata = self._merge_sources(metadata, sources)
+        # Use the new aggregation system to merge data from sources
+        aggregated_data, confidence_scores = self.data_aggregator.aggregate_package_data(
+            software_name, sources
+        )
+        
+        # Merge the aggregated data with the template data
+        metadata = self._deep_merge(metadata, aggregated_data)
         
         # Create the enhanced metadata object
         enhanced_metadata = EnhancedSaidataMetadata.from_dict(metadata)
         
         # Validate the metadata
         validation_result = enhanced_metadata.validate()
-        
-        # Calculate confidence scores
-        confidence_scores = self._calculate_confidence_scores(enhanced_metadata, sources)
         
         return MetadataResult(
             metadata=enhanced_metadata,
@@ -167,6 +173,51 @@ class MetadataGenerator:
                             result["platforms"].append(platform)
         
         return result
+    
+    def _deep_merge(self, base: Dict[str, Any], overlay: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Deep merge two dictionaries.
+        
+        Args:
+            base: Base dictionary.
+            overlay: Dictionary to merge into base.
+            
+        Returns:
+            Merged dictionary.
+        """
+        result = base.copy()
+        
+        for key, value in overlay.items():
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = self._deep_merge(result[key], value)
+            elif key in result and isinstance(result[key], list) and isinstance(value, list):
+                # Merge lists, avoiding duplicates
+                merged_list = result[key].copy()
+                for item in value:
+                    if item not in merged_list:
+                        merged_list.append(item)
+                result[key] = merged_list
+            else:
+                result[key] = value
+        
+        return result
+    
+    def get_conflict_report(
+        self,
+        software_name: str,
+        sources: List[PackageInfo]
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Generate a conflict report showing disagreements between sources.
+        
+        Args:
+            software_name: Name of the software package.
+            sources: List of package information from different sources.
+            
+        Returns:
+            Dictionary mapping field paths to lists of conflicting values.
+        """
+        return self.data_aggregator.get_conflict_report(software_name, sources)
     
     def _calculate_confidence_scores(
         self,

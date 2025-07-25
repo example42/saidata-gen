@@ -1,0 +1,45 @@
+# Basic Configuration for Saidata Generator
+# This is a minimal configuration suitable for getting started
+
+# Core settings
+cache:
+  directory: "~/.saidata-gen/cache"
+  ttl: 3600  # 1 hour cache TTL
+  max_size: "1GB"
+
+# Repository fetcher configuration
+fetcher:
+  concurrent_requests: 5
+  request_timeout: 30
+  retry_count: 2
+  enabled_providers:
+    - apt
+    - brew
+    - pypi
+    - npm
+    - yum
+
+
+# Generation settings
+generation:
+  output_format: "yaml"
+  validate_schema: true
+  confidence_threshold: 0.6
+  include_dev_packages: false
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: null  # Log to console only
+
+# Template settings
+templates:
+  use_defaults: true
+  custom_templates_dir: null
+
+# Quality settings
+quality:
+  min_confidence_score: 0.5
+  cross_reference_validation: true
+  source_attribution: true

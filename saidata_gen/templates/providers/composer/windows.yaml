@@ -1,0 +1,23 @@
+# Composer Windows-specific overrides
+version: 0.1
+
+# Windows-specific directory configuration
+directories:
+  config:
+    path: "%APPDATA%\\Composer"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"
+  data:
+    path: "%APPDATA%\\Composer\\vendor\\{{ software_name }}"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"
+
+# Windows-specific file configuration
+files:
+  config:
+    path: "%APPDATA%\\Composer\\config.json"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"

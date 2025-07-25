@@ -1,0 +1,26 @@
+# PKG (FreeBSD) provider template
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# FreeBSD specific service configuration (rc.d-based)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# FreeBSD specific directory configuration
+directories:
+  config:
+    path: "/usr/local/etc/{{ software_name }}"
+    mode: "0755"
+
+# FreeBSD specific file configuration
+files:
+  config:
+    path: "/usr/local/etc/{{ software_name }}/{{ software_name }}.conf"
+  init:
+    path: "/etc/rc.conf.d/{{ software_name }}"
+
+# PKG-specific URL
+urls:
+  pkg: "https://www.freshports.org/{{ software_name }}"

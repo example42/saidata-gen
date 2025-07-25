@@ -1,0 +1,23 @@
+# Maven Windows-specific overrides
+version: 0.1
+
+# Windows-specific directory configuration
+directories:
+  config:
+    path: "%USERPROFILE%\\.m2"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"
+  data:
+    path: "%USERPROFILE%\\.m2\\repository"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"
+
+# Windows-specific file configuration
+files:
+  config:
+    path: "%USERPROFILE%\\.m2\\settings.xml"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"

@@ -1,0 +1,13 @@
+# Maven (Java) base configuration - common settings across all platforms
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Maven-specific package configuration
+packages:
+  default:
+    name: "{{ software_name }}"
+    version: latest
+
+# Maven-specific URL
+urls:
+  maven: "https://mvnrepository.com/artifact/{{ software_name }}"

@@ -1,0 +1,14 @@
+# NPM (Node.js) base configuration - common settings across all platforms
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# NPM-specific package configuration
+packages:
+  default:
+    name: "{{ software_name }}"
+    version: latest
+    install_options: ["-g"] # Global installation by default
+
+# NPM-specific URL
+urls:
+  npm: "https://www.npmjs.com/package/{{ software_name }}"

@@ -1,0 +1,34 @@
+# Example template with function calls
+version: 0.1
+
+# Use the lower function to convert software name to lowercase
+$function: lower(software_name)
+  lowercase_name
+
+# Use the upper function to convert software name to uppercase
+$function: upper(software_name)
+  uppercase_name
+
+# Use the capitalize function to capitalize software name
+$function: capitalize(software_name)
+  capitalized_name
+
+# Use the title function to title-case software name
+$function: title(software_name)
+  title_case_name
+
+# Use the join function to join platforms with a separator
+$function: join(platforms, " | ")
+  platforms_string
+
+# Use the split function to split a string
+$function: split("web,server,http", ",")
+  tags
+
+# Use the json function to convert an object to JSON
+$function: json({"name": software_name, "version": "latest"})
+  json_data
+
+# Use the yaml function to convert an object to YAML
+$function: yaml({"name": software_name, "version": "latest"})
+  yaml_data

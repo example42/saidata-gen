@@ -1,0 +1,14 @@
+# SLES-specific Zypper overrides
+version: 0.1
+
+# SLES-specific URL
+urls:
+  zypper: "https://www.suse.com/products/server/{{ software_name }}"
+
+# SLES-specific repository configuration
+files:
+  repo:
+    path: "/etc/zypp/repos.d/{{ software_name }}.repo"
+    owner: root
+    group: root
+    mode: "0644"

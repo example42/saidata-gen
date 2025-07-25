@@ -1,0 +1,16 @@
+# Docker macOS-specific overrides
+version: 0.1
+
+# macOS-specific directory configuration
+directories:
+  config:
+    path: "~/Library/Containers/com.docker.docker/Data/vms/0/data/docker/containers"
+    mode: "0755"
+  data:
+    path: "~/Library/Containers/com.docker.docker/Data/vms/0/data/docker/volumes"
+    mode: "0755"
+
+# macOS-specific file configuration
+files:
+  config:
+    path: "~/.docker/daemon.json"

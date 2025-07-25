@@ -1,0 +1,13 @@
+# Flatpak base configuration - common settings across all distributions
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Flatpak-specific service configuration (systemd user services)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Flatpak-specific URL
+urls:
+  flatpak: "https://flathub.org/apps/details/{{ software_name }}"

@@ -1,0 +1,70 @@
+# Common Software Packages for Testing
+# This file contains a curated list of popular software packages
+# for testing and demonstration purposes
+
+# Web Servers
+nginx
+apache2
+caddy
+
+# Databases
+mysql-server
+postgresql
+redis-server
+mongodb
+sqlite3
+
+# Development Tools
+git
+vim
+emacs
+vscode
+docker
+nodejs
+python3
+golang
+rust
+
+# System Utilities
+htop
+curl
+wget
+tmux
+screen
+openssh-server
+ufw
+fail2ban
+
+# Programming Languages
+java
+php
+ruby
+perl
+
+# Package Managers
+npm
+pip
+cargo
+composer
+
+# Monitoring Tools
+prometheus
+grafana
+zabbix-agent
+
+# Container Tools
+kubernetes
+helm
+docker-compose
+
+# Text Processing
+grep
+sed
+awk
+jq
+
+# Network Tools
+netcat
+nmap
+wireshark
+tcpdump

@@ -1,0 +1,34 @@
+# Include documentation files
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+include CODE_OF_CONDUCT.md
+include SECURITY.md
+
+# Include schema files
+recursive-include schemas *.json
+
+# Include template files
+recursive-include saidata_gen/templates *.yaml *.yml
+
+# Include example files
+recursive-include examples *.py *.yaml *.yml *.sh *.md *.txt
+
+# Include documentation
+recursive-include docs *.md *.rst
+
+# Exclude development and build files
+exclude .gitignore
+exclude .coverage
+exclude pytest.ini
+exclude pyproject.toml.bak
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * *.egg-info
+recursive-exclude .git *
+recursive-exclude .github *
+recursive-exclude .pytest_cache *
+recursive-exclude .venv *
+recursive-exclude build *
+recursive-exclude dist *

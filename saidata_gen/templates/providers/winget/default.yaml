@@ -1,0 +1,12 @@
+# Windows Package Manager (winget) base configuration
+version: 0.1
+
+# Winget-specific service configuration (enabled by default on Windows)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Winget-specific URL
+urls:
+  winget: "https://winget.run/pkg/{{ software_name }}"

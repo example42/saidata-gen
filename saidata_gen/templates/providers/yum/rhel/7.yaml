@@ -1,0 +1,14 @@
+# RHEL 7-specific YUM overrides
+version: 0.1
+
+# RHEL 7 uses init.d instead of systemd for some services
+files:
+  init_script:
+    path: "/etc/init.d/{{ software_name }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+# RHEL 7-specific package repository
+urls:
+  yum: "https://access.redhat.com/solutions/rhel7/{{ software_name }}"

@@ -1,0 +1,15 @@
+# Windows-specific Scoop overrides
+version: 0.1
+
+# Windows-specific directory configuration for Scoop
+directories:
+  config:
+    path: "%USERPROFILE%\\scoop\\apps\\{{ software_name }}\\current"
+    owner: "%USERNAME%"
+    group: "Users"
+    mode: "0644"
+  app_config:
+    path: "%APPDATA%\\{{ software_name }}"
+    owner: "%USERNAME%"
+    group: "Users"
+    mode: "0644"

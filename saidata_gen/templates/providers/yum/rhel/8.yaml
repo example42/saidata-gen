@@ -1,0 +1,14 @@
+# RHEL 8-specific YUM overrides
+version: 0.1
+
+# RHEL 8 uses systemd and has different paths
+files:
+  systemd_service:
+    path: "/etc/systemd/system/{{ software_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+
+# RHEL 8-specific package repository
+urls:
+  yum: "https://access.redhat.com/solutions/rhel8/{{ software_name }}"

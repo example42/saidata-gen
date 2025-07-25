@@ -1,0 +1,23 @@
+# Go Windows-specific overrides
+version: 0.1
+
+# Windows-specific directory configuration
+directories:
+  config:
+    path: "%USERPROFILE%\\go"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"
+  data:
+    path: "%USERPROFILE%\\go\\bin"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"
+
+# Windows-specific file configuration
+files:
+  config:
+    path: "%USERPROFILE%\\go\\go.mod"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"

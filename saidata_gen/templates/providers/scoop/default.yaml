@@ -1,0 +1,17 @@
+# Scoop base configuration
+version: 0.1
+
+# Scoop-specific package configuration (uses bucket:package format)
+packages:
+  default:
+    name: "{{ software_name }}:{{ software_name }}"
+
+# Scoop-specific service configuration (enabled by default on Windows)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Scoop-specific URL
+urls:
+  scoop: "https://scoop.sh/#/apps?q={{ software_name }}"

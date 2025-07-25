@@ -1,0 +1,22 @@
+# APT specific default overrides for Apache HTTP Server
+version: 0.1
+
+# Package name override - Apache is called 'apache2' on Debian/Ubuntu
+packages:
+  default:
+    name: apache2
+
+# APT-specific service configuration
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# APT-specific file configuration
+files:
+  init:
+    path: "/etc/default/apache2"
+
+# APT-specific URL
+urls:
+  apt: "https://packages.ubuntu.com/apache2"

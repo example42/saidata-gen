@@ -1,0 +1,24 @@
+# OPKG (Embedded Linux/OpenWrt) provider template
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Embedded Linux specific service configuration (procd-based)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Embedded Linux specific directory configuration
+directories:
+  config:
+    path: "/etc/config"
+    mode: "0644"
+
+# Embedded Linux specific file configuration
+files:
+  config:
+    path: "/etc/config/{{ software_name }}"
+
+# OPKG-specific URL
+urls:
+  opkg: "https://openwrt.org/packages/pkgdata/{{ software_name }}"

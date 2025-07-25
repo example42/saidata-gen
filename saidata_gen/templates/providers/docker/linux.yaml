@@ -1,0 +1,16 @@
+# Docker Linux-specific overrides
+version: 0.1
+
+# Linux-specific directory configuration
+directories:
+  config:
+    path: "/var/lib/docker/containers"
+    mode: "0755"
+  data:
+    path: "/var/lib/docker/volumes"
+    mode: "0755"
+
+# Linux-specific file configuration
+files:
+  config:
+    path: "/etc/docker/daemon.json"

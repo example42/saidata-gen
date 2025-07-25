@@ -1,0 +1,138 @@
+# Anthropic Claude RAG Configuration for Saidata Generator
+# Configuration for using Anthropic Claude models for enhanced metadata generation
+
+# RAG Engine Configuration
+rag:
+  enabled: true
+  provider: "anthropic"
+  
+  # Anthropic-specific settings
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"  # Set via environment variable
+    model: "claude-3-sonnet-20240229"
+    base_url: null  # Use default Anthropic API
+    
+    # Model parameters
+    temperature: 0.1
+    max_tokens: 2000
+    top_p: 0.9
+    top_k: 40
+    
+    # Request settings
+    timeout: 90
+    max_retries: 3
+    retry_delay: 3
+
+  # Fallback configuration
+  fallback:
+    enabled: true
+    use_traditional_sources: true
+    confidence_threshold: 0.5
+
+  # Enhancement settings
+  enhancement:
+    description_enhancement: true
+    categorization: true
+    missing_field_completion: true
+    technical_analysis: true
+    dependency_analysis: true
+
+  # Confidence scoring
+  confidence:
+    ai_generated_content: 0.85
+    enhanced_descriptions: 0.9
+    auto_categorization: 0.8
+    technical_analysis: 0.75
+
+# Claude-optimized prompt templates
+prompts:
+  description_enhancement: |
+    I need you to enhance a software package description. You are an expert in software documentation.
+    
+    Here's the basic information:
+    Software Name: {software_name}
+    Current Description: {current_description}
+    Package Details: {package_details}
+    
+    Please provide an enhanced description that:
+    1. Clearly explains the software's purpose and functionality
+    2. Highlights key features and capabilities
+    3. Mentions the target audience or use cases
+    4. Maintains technical accuracy
+    5. Is concise but informative (150-300 words)
+    
+    Focus on being helpful and informative while staying factual.
+
+  categorization: |
+    Please analyze this software package and provide appropriate categorization.
+    
+    Software: {software_name}
+    Description: {description}
+    Technical Details: {technical_details}
+    
+    Based on this information, please provide:
+    
+    1. Primary Category (choose from: Development, System, Network, Security, Multimedia, 
+       Office, Games, Education, Utilities, Server, Database, Web, Mobile, AI/ML)
+    
+    2. Subcategory (be more specific within the primary category)
+    
+    3. Tags (3-5 relevant tags that describe key aspects)
+    
+    4. Technical Classification (if applicable: library, framework, tool, application, service)
+    
+    Please format your response as structured data.
+
+  technical_analysis: |
+    Analyze the technical aspects of this software package:
+    
+    Software: {software_name}
+    Package Information: {package_info}
+    Dependencies: {dependencies}
+    
+    Please provide analysis on:
+    1. Programming language(s) used
+    2. Architecture type (CLI, GUI, web service, library, etc.)
+    3. Platform compatibility
+    4. Key dependencies and their purposes
+    5. Installation complexity level
+    6. Resource requirements (if determinable)
+    
+    Be specific but concise in your analysis.
+
+# Quality control settings
+quality_control:
+  max_description_length: 600
+  min_description_length: 50
+  
+  technical_accuracy_checks:
+    verify_language_claims: true
+    check_platform_compatibility: true
+    validate_dependency_relationships: true
+  
+  content_guidelines:
+    avoid_marketing_language: true
+    focus_on_functionality: true
+    include_technical_details: true
+    maintain_neutral_tone: true
+
+# Advanced features for Claude
+advanced_features:
+  multi_turn_conversations: false
+  context_preservation: true
+  reasoning_transparency: true
+  uncertainty_indication: true
+
+# Cost and rate limiting
+cost_management:
+  max_tokens_per_request: 2000
+  max_requests_per_minute: 30  # Conservative for Anthropic
+  daily_request_limit: 1000
+  cost_tracking: true
+  
+# Model-specific optimizations
+model_optimizations:
+  use_system_prompts: true
+  structured_output: true
+  chain_of_thought: false  # Disable for efficiency
+  few_shot_examples: true

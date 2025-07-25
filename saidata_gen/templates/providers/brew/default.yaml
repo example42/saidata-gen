@@ -1,0 +1,12 @@
+# Homebrew base configuration - common settings across all platforms
+version: 0.1
+
+# Homebrew-specific service configuration (enabled by default)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Homebrew-specific URL
+urls:
+  brew: "https://brew.sh/formula/{{ software_name }}"

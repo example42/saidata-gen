@@ -1,0 +1,16 @@
+# Ubuntu-specific overrides for Apache HTTP Server
+version: 0.1
+
+# Package name override - Apache is called 'apache2' on Ubuntu
+packages:
+  default:
+    name: apache2
+
+# Ubuntu-specific URL
+urls:
+  apt: "https://packages.ubuntu.com/apache2"
+
+# Ubuntu-specific repository configuration
+files:
+  sources_list:
+    path: "/etc/apt/sources.list.d/apache2.list"

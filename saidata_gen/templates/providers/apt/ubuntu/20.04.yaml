@@ -1,0 +1,11 @@
+# Ubuntu 20.04 LTS (Focal Fossa) specific APT overrides
+version: 0.1
+
+# Ubuntu 20.04-specific repository URL
+urls:
+  apt: "https://packages.ubuntu.com/focal/{{ software_name }}"
+
+# Ubuntu 20.04-specific package naming (if different)
+# packages:
+#   default:
+#     name: "{{ software_name }}-focal"

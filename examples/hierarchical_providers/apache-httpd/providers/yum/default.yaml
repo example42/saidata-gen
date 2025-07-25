@@ -1,0 +1,16 @@
+# YUM base configuration for Apache HTTP Server
+version: 0.1
+
+# Base YUM configuration - common across all RHEL-family distros
+services:
+  default:
+    enabled: true
+    status: enabled
+
+directories:
+  config:
+    mode: "0644"
+
+files:
+  init:
+    path: "/etc/sysconfig/httpd"

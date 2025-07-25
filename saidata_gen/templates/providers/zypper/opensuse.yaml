@@ -1,0 +1,14 @@
+# openSUSE-specific Zypper overrides
+version: 0.1
+
+# openSUSE-specific URL
+urls:
+  zypper: "https://software.opensuse.org/package/{{ software_name }}"
+
+# openSUSE-specific repository configuration
+files:
+  repo:
+    path: "/etc/zypp/repos.d/{{ software_name }}.repo"
+    owner: root
+    group: root
+    mode: "0644"

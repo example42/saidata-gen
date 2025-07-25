@@ -1,0 +1,30 @@
+# Example template with conditional logic
+version: 0.1
+
+$if: software_type == 'web_server'
+category:
+  default: "web"
+  sub: "server"
+  tags: ["http", "web", "server"]
+$elif: software_type == 'database'
+category:
+  default: "database"
+  sub: "server"
+  tags: ["data", "storage", "server"]
+$else
+category:
+  default: "application"
+  sub: "utility"
+  tags: ["utility"]
+$endif
+
+$if: is_open_source
+license: "${license | MIT}"
+urls:
+  source: "https://github.com/example/$software_name"
+$endif
+
+$if: has_documentation
+urls:
+  documentation: "https://docs.example.com/$software_name"
+$endif

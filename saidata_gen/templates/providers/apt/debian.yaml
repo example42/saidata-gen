@@ -1,0 +1,14 @@
+# Debian-specific APT overrides
+version: 0.1
+
+# Debian-specific URL
+urls:
+  apt: "https://packages.debian.org/{{ software_name }}"
+
+# Debian-specific repository configuration
+files:
+  sources_list:
+    path: "/etc/apt/sources.list.d/{{ software_name }}.list"
+    owner: root
+    group: root
+    mode: "0644"

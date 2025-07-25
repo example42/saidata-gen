@@ -1,0 +1,16 @@
+# APT base configuration for Apache HTTP Server
+version: 0.1
+
+# Base APT configuration - common across all Debian-family distros
+services:
+  default:
+    enabled: true
+    status: enabled
+
+directories:
+  config:
+    mode: "0644"
+
+files:
+  init:
+    path: "/etc/default/apache2"

@@ -1,0 +1,22 @@
+# YUM specific default overrides for Apache HTTP Server
+version: 0.1
+
+# Package name override - Apache is called 'httpd' on RHEL/CentOS
+packages:
+  default:
+    name: httpd
+
+# YUM-specific service configuration
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# YUM-specific file configuration
+files:
+  init:
+    path: "/etc/sysconfig/httpd"
+
+# YUM-specific URL
+urls:
+  yum: "https://centos.pkgs.org/httpd"

@@ -1,0 +1,16 @@
+# RHEL-specific overrides for Apache HTTP Server
+version: 0.1
+
+# Package name override - Apache is called 'httpd' on RHEL
+packages:
+  default:
+    name: httpd
+
+# RHEL-specific URL
+urls:
+  yum: "https://access.redhat.com/solutions/httpd"
+
+# RHEL-specific repository configuration
+files:
+  repo:
+    path: "/etc/yum.repos.d/httpd.repo"

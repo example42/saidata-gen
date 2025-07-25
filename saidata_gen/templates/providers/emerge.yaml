@@ -1,0 +1,23 @@
+# Emerge (Gentoo) provider template
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Gentoo emerge-specific service configuration (OpenRC-based)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Gentoo-specific directory configuration
+directories:
+  config:
+    mode: "0644"
+
+# Gentoo-specific file configuration
+files:
+  init:
+    path: "/etc/conf.d/{{ software_name }}"
+
+# Emerge-specific URL (same as portage but different context)
+urls:
+  emerge: "https://packages.gentoo.org/packages/{{ software_name }}"

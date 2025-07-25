@@ -1,0 +1,14 @@
+# RHEL-specific DNF overrides (RHEL 8+)
+version: 0.1
+
+# RHEL-specific URL
+urls:
+  dnf: "https://access.redhat.com/solutions/{{ software_name }}"
+
+# RHEL-specific repository configuration
+files:
+  repo:
+    path: "/etc/yum.repos.d/{{ software_name }}.repo"
+    owner: root
+    group: root
+    mode: "0644"

@@ -1,0 +1,23 @@
+# APK (Alpine Linux) provider template
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Alpine Linux specific service configuration (OpenRC-based)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Alpine Linux specific directory configuration
+directories:
+  config:
+    mode: "0644"
+
+# Alpine Linux specific file configuration
+files:
+  init:
+    path: "/etc/conf.d/{{ software_name }}"
+
+# APK-specific URL
+urls:
+  apk: "https://pkgs.alpinelinux.org/packages?name={{ software_name }}"

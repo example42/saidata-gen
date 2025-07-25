@@ -1,0 +1,13 @@
+# Gradle (Java/Kotlin) base configuration - common settings across all platforms
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Gradle-specific package configuration
+packages:
+  default:
+    name: "{{ software_name }}"
+    version: latest
+
+# Gradle-specific URL
+urls:
+  gradle: "https://plugins.gradle.org/plugin/{{ software_name }}"

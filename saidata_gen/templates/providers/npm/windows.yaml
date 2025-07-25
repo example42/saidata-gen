@@ -1,0 +1,23 @@
+# NPM Windows-specific overrides
+version: 0.1
+
+# Windows-specific directory configuration
+directories:
+  config:
+    path: "%APPDATA%\\npm"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"
+  data:
+    path: "%APPDATA%\\npm\\node_modules\\{{ software_name }}"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"
+
+# Windows-specific file configuration
+files:
+  config:
+    path: "%USERPROFILE%\\.npmrc"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"

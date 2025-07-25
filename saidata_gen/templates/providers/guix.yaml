@@ -1,0 +1,27 @@
+# GNU Guix provider template
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Guix-specific package configuration
+packages:
+  default:
+    name: "{{ software_name }}"
+    version: latest
+
+# Guix-specific directory configuration
+directories:
+  config:
+    path: "~/.config/guix"
+    mode: "0755"
+  data:
+    path: "/gnu/store"
+    mode: "0755"
+
+# Guix-specific file configuration
+files:
+  config:
+    path: "~/.config/guix/channels.scm"
+
+# Guix-specific URL
+urls:
+  guix: "https://packages.guix.gnu.org/packages/{{ software_name }}"

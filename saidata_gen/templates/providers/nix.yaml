@@ -1,0 +1,27 @@
+# Nix provider template
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Nix-specific package configuration
+packages:
+  default:
+    name: "{{ software_name }}"
+    version: latest
+
+# Nix-specific directory configuration
+directories:
+  config:
+    path: "~/.config/nix"
+    mode: "0755"
+  data:
+    path: "/nix/store"
+    mode: "0755"
+
+# Nix-specific file configuration
+files:
+  config:
+    path: "~/.config/nix/nix.conf"
+
+# Nix-specific URL
+urls:
+  nix: "https://search.nixos.org/packages?query={{ software_name }}"

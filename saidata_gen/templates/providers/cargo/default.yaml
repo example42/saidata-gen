@@ -1,0 +1,14 @@
+# Cargo (Rust) base configuration - common settings across all platforms
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Cargo-specific package configuration
+packages:
+  default:
+    name: "{{ software_name }}"
+    version: latest
+    install_options: ["--locked"] # Use locked dependencies by default
+
+# Cargo-specific URL
+urls:
+  cargo: "https://crates.io/crates/{{ software_name }}"

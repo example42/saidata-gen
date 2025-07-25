@@ -1,0 +1,64 @@
+# Development Configuration for Saidata Generator
+# Optimized for development and testing environments
+
+# Core settings
+cache:
+  directory: "./dev-cache"
+  ttl: 300  # 5 minutes for quick iteration
+  max_size: "100MB"
+  cleanup_on_exit: false  # Keep cache for debugging
+
+# Repository fetcher configuration
+fetcher:
+  concurrent_requests: 2
+  request_timeout: 20
+  retry_count: 1
+  enabled_providers:
+    - apt
+    - brew
+    - pypi
+    - npm
+
+# Generation settings
+generation:
+  output_format: "yaml"
+  validate_schema: true
+  confidence_threshold: 0.5  # Lower threshold for testing
+  include_dev_packages: true
+  parallel_processing: false  # Easier debugging
+  debug_mode: true
+
+# Development-specific settings
+development:
+  verbose_output: true
+  save_intermediate_results: true
+  mock_external_apis: false
+  test_mode: false
+
+# Logging configuration
+logging:
+  level: "DEBUG"
+  format: "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d - %(message)s"
+  file: "dev-saidata-gen.log"
+  console_output: true
+  debug_requests: true
+
+# Quality settings (relaxed for development)
+quality:
+  min_confidence_score: 0.3
+  cross_reference_validation: true
+  source_attribution: true
+  strict_validation: false
+
+# Template settings
+templates:
+  use_defaults: true
+  custom_templates_dir: "./dev-templates"
+  reload_templates: true  # Reload templates on each run
+
+# Testing configuration
+testing:
+  mock_responses: false
+  test_data_dir: "./test-data"
+  generate_test_reports: true
+  performance_profiling: true

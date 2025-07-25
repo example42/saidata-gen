@@ -121,18 +121,8 @@ class DNFFetcher(HttpRepositoryFetcher):
                 url="https://download.rockylinux.org/pub/rocky/8/BaseOS/x86_64/os/",
                 architectures=["x86_64"]
             ),
-            DNFDistribution(
-                name="rhel",
-                version="9",
-                url="https://cdn.redhat.com/content/dist/rhel9/9/x86_64/baseos/os",
-                architectures=["x86_64"]
-            ),
-            DNFDistribution(
-                name="rhel",
-                version="8",
-                url="https://cdn.redhat.com/content/dist/rhel8/8/x86_64/baseos/os",
-                architectures=["x86_64"]
-            )
+            # RHEL repositories removed due to authentication requirements and SSL issues
+            # Users can add their own RHEL repositories with proper authentication
         ]
         
         # Initialize package cache

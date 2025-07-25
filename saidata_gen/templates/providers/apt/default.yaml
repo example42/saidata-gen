@@ -1,0 +1,19 @@
+# APT base configuration - common settings across all APT-based distributions
+# Only include configurations that differ from defaults.yaml
+version: 0.1
+
+# APT-specific service configuration (enabled by default on Debian/Ubuntu)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# APT-specific directory configuration (different mode from default)
+directories:
+  config:
+    mode: "0644"
+
+# APT-specific file configuration (init file for Debian/Ubuntu)
+files:
+  init:
+    path: "/etc/default/{{ software_name }}"

@@ -1,0 +1,13 @@
+# DNF base configuration - common settings across all DNF-based distributions
+version: 0.1
+
+# DNF-specific service configuration (enabled by default, uses systemd)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# DNF-specific directory configuration (different mode from default)
+directories:
+  config:
+    mode: "0644"

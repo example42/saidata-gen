@@ -1,0 +1,14 @@
+# Gem (Ruby) base configuration - common settings across all platforms
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Gem-specific package configuration
+packages:
+  default:
+    name: "{{ software_name }}"
+    version: latest
+    install_options: ["--user-install"] # User installation by default
+
+# Gem-specific URL
+urls:
+  gem: "https://rubygems.org/gems/{{ software_name }}"

@@ -1,0 +1,15 @@
+# Windows-specific Winget overrides
+version: 0.1
+
+# Windows-specific directory configuration
+directories:
+  config:
+    path: "C:\\ProgramData\\{{ software_name }}"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"
+  app_config:
+    path: "C:\\ProgramData\\{{ software_name }}\\config"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"

@@ -1,0 +1,16 @@
+# Composer Linux-specific overrides
+version: 0.1
+
+# Linux-specific directory configuration
+directories:
+  config:
+    path: "~/.composer"
+    mode: "0755"
+  data:
+    path: "~/.composer/vendor/{{ software_name }}"
+    mode: "0755"
+
+# Linux-specific file configuration
+files:
+  config:
+    path: "~/.composer/config.json"

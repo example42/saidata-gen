@@ -1,0 +1,15 @@
+# Windows-specific Chocolatey overrides
+version: 0.1
+
+# Windows-specific directory configuration for Chocolatey
+directories:
+  config:
+    path: "C:\\ProgramData\\chocolatey\\lib\\{{ software_name }}\\tools"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"
+  app_config:
+    path: "C:\\ProgramData\\{{ software_name }}"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"

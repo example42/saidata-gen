@@ -1,0 +1,14 @@
+# NuGet (.NET) base configuration - common settings across all platforms
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# NuGet-specific package configuration
+packages:
+  default:
+    name: "{{ software_name }}"
+    version: latest
+    install_options: ["--global"] # Global tool installation by default
+
+# NuGet-specific URL
+urls:
+  nuget: "https://www.nuget.org/packages/{{ software_name }}/"

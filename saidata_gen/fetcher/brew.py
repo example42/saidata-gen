@@ -325,6 +325,15 @@ class BrewFetcher(HttpRepositoryFetcher):
             if not name:
                 continue
             
+            # Ensure name is a string (not a list)
+            if isinstance(name, list):
+                if len(name) > 0:
+                    name = str(name[0])
+                else:
+                    continue
+            else:
+                name = str(name)
+            
             # Add repository type to the data
             item["brew_type"] = repo_type
             
@@ -333,11 +342,21 @@ class BrewFetcher(HttpRepositoryFetcher):
             
             # Also add by full_name if available and different from name
             full_name = item.get("full_name")
-            if full_name and full_name != name and full_name not in result:
-                # Create a copy with the same data but different name
-                full_name_item = item.copy()
-                full_name_item["name"] = full_name
-                result[full_name] = full_name_item
+            if full_name:
+                # Ensure full_name is a string (not a list)
+                if isinstance(full_name, list):
+                    if len(full_name) > 0:
+                        full_name = str(full_name[0])
+                    else:
+                        full_name = None
+                else:
+                    full_name = str(full_name)
+                
+                if full_name and full_name != name and full_name not in result:
+                    # Create a copy with the same data but different name
+                    full_name_item = item.copy()
+                    full_name_item["name"] = full_name
+                    result[full_name] = full_name_item
         
         return result
     

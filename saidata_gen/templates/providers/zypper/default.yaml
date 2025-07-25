@@ -1,0 +1,18 @@
+# Zypper base configuration - common settings across SUSE distributions
+version: 0.1
+
+# Zypper-specific service configuration (enabled by default, uses systemd)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Zypper-specific directory configuration (different mode from default)
+directories:
+  config:
+    mode: "0644"
+
+# Zypper-specific file configuration
+files:
+  sysconfig:
+    path: "/etc/sysconfig/{{ software_name }}"

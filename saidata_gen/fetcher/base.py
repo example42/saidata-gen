@@ -107,17 +107,22 @@ class RepositoryFetcher(abc.ABC):
         """
         session = requests.Session()
         
-        # Configure retry strategy
+        # Configure retry strategy - don't retry on SSL errors
         retry_strategy = Retry(
             total=self.config.retry_count,
             backoff_factor=0.5,
             status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["GET", "HEAD"]
+            allowed_methods=["GET", "HEAD"],
+            # Don't retry on SSL errors
+            raise_on_status=False
         )
         
         adapter = HTTPAdapter(max_retries=retry_strategy)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
+        
+        # Set reasonable timeout
+        session.timeout = 30
         
         return session
     
