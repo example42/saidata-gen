@@ -9,7 +9,7 @@ cache:
 
 # Repository fetcher configuration
 fetcher:
-  concurrent_requests: 3
+  concurrent_requests: 5
   request_timeout: 30
   retry_count: 2
   enabled_providers:
@@ -17,6 +17,8 @@ fetcher:
     - brew
     - pypi
     - npm
+    - yum
+
 
 # Generation settings
 generation:

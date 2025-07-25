@@ -56,8 +56,7 @@ process_software() {
     echo "Processing: $software"
     
     # Generate metadata with logging
-    if saidata-gen generate "$software" \
-        --config "$CONFIG_FILE" \
+    if saidata-gen --config "$CONFIG_FILE" generate "$software" \
         --output "$output_file" \
         --providers apt,brew,pypi,npm,docker \
         > "$log_file" 2>&1; then

@@ -93,7 +93,7 @@ validate_configuration() {
     log_info "Validating configuration..."
     
     # Test configuration by running a dry-run
-    if saidata-gen config validate --config "$SAIDATA_CONFIG" > /dev/null 2>&1; then
+    if saidata-gen --config "$SAIDATA_CONFIG" config validate > /dev/null 2>&1; then
         log_success "Configuration validation passed"
     else
         log_error "Configuration validation failed"
@@ -127,8 +127,7 @@ process_software_list() {
         log_info "Processing: $software"
         
         # Generate metadata
-        if saidata-gen generate "$software" \
-            --config "$SAIDATA_CONFIG" \
+        if saidata-gen --config "$SAIDATA_CONFIG" generate "$software" \
             --output "$output_file" \
             --providers "$SAIDATA_PROVIDERS" \
             --confidence-threshold "$SAIDATA_CONFIDENCE_THRESHOLD" \

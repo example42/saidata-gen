@@ -21,8 +21,7 @@ mkdir -p "$OUTPUT_DIR"
 
 # Step 1: Generate metadata
 echo "Step 1: Generating metadata for $SOFTWARE_NAME..."
-saidata-gen generate "$SOFTWARE_NAME" \
-    --config "$CONFIG_FILE" \
+saidata-gen --config "$CONFIG_FILE" generate "$SOFTWARE_NAME" \
     --output "$OUTPUT_DIR/${SOFTWARE_NAME}.yaml" \
     --providers apt,brew,pypi,npm
 
