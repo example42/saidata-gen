@@ -1,0 +1,23 @@
+# NuGet Windows-specific overrides
+version: 0.1
+
+# Windows-specific directory configuration
+directories:
+  config:
+    path: "%APPDATA%\\NuGet"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"
+  data:
+    path: "%USERPROFILE%\\.nuget\\packages\\{{ software_name }}"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"
+
+# Windows-specific file configuration
+files:
+  config:
+    path: "%APPDATA%\\NuGet\\NuGet.Config"
+    owner: Administrator
+    group: Administrators
+    mode: "0644"

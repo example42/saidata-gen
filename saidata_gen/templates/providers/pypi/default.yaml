@@ -1,0 +1,14 @@
+# PyPI (Python) base configuration - common settings across all platforms
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# PyPI-specific package configuration
+packages:
+  default:
+    name: "{{ software_name }}"
+    version: latest
+    install_options: ["--user"] # User installation by default
+
+# PyPI-specific URL
+urls:
+  pypi: "https://pypi.org/project/{{ software_name }}/"

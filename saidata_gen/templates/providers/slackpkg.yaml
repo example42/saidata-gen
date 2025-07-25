@@ -1,0 +1,23 @@
+# Slackpkg (Slackware) provider template
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Slackware specific service configuration (BSD-style init)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Slackware specific directory configuration
+directories:
+  config:
+    mode: "0644"
+
+# Slackware specific file configuration
+files:
+  init:
+    path: "/etc/rc.d/rc.{{ software_name }}"
+
+# Slackpkg-specific URL
+urls:
+  slackpkg: "https://packages.slackware.com/?p={{ software_name }}"

@@ -1,0 +1,13 @@
+# Snap (Ubuntu/Universal) base configuration - common settings across all distributions
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Snap-specific service configuration (systemd-based)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Snap-specific URL
+urls:
+  snap: "https://snapcraft.io/{{ software_name }}"

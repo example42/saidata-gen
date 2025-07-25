@@ -1,0 +1,27 @@
+# Spack (HPC) provider template
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Spack-specific package configuration
+packages:
+  default:
+    name: "{{ software_name }}"
+    version: latest
+
+# Spack-specific directory configuration
+directories:
+  config:
+    path: "~/.spack"
+    mode: "0755"
+  data:
+    path: "~/spack/opt/spack"
+    mode: "0755"
+
+# Spack-specific file configuration
+files:
+  config:
+    path: "~/.spack/config.yaml"
+
+# Spack-specific URL
+urls:
+  spack: "https://packages.spack.io/package.html?name={{ software_name }}"

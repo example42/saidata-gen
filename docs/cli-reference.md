@@ -382,6 +382,25 @@ export SAIDATA_GEN_LOG_FORMAT="%(levelname)s: %(message)s"
 saidata-gen generate nginx
 ```
 
+## Development Tools
+
+### Provider Template Analysis
+
+For developers working on provider templates, use the analysis script to identify redundant configurations:
+
+```bash
+# Analyze all provider templates
+python scripts/analyze_provider_templates.py
+
+# This will generate a report showing:
+# - Redundant keys that can be removed
+# - Provider-specific overrides to keep
+# - Redundancy percentage per provider
+# - Recommendations for optimization
+```
+
+The analysis script helps maintain clean provider templates by identifying configurations that duplicate the defaults and can be safely removed.
+
 ## Performance Tips
 
 1. **Use caching**: Let the tool cache repository data for faster subsequent runs

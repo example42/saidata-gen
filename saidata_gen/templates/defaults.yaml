@@ -1,87 +1,150 @@
 # Default template for saidata metadata generation
+# This file contains the base configuration that applies to all software packages.
+# Provider-specific templates should only override values that differ from these defaults.
+#
+# IMPORTANT: Provider templates should follow the override-only pattern:
+# - Only include configurations that differ from these defaults
+# - Package names can be overridden when they differ from software_name
+# - Provider name is inferred from filename (e.g., apt.yaml = APT provider)
+# - See PROVIDER_TEMPLATE_GUIDELINES.md for detailed guidance
+
 version: 0.1
 
+# Package definitions - Different package types that can be installed
 packages:
   default:
-    name: "{{ software_name }}"
+    name: "$software_name"
     version: latest
-    install_options: null # Default is undefined.
+    install_options: ~ # Installation options/flags, default is undefined
   dev:
-    name: "{{ software_name }}-dev"
+    name: "$software_name-dev"
     version: latest
-    install_options: null # Default is undefined.
+    install_options: ~ # Development package installation options
   doc:
-    name: "{{ software_name }}-doc"
+    name: "$software_name-doc"
     version: latest
-    install_options: null # Default is undefined.
+    install_options: ~ # Documentation package installation options
 
+# Service configurations - System services related to the software
 services:
   default:
-    name: "{{ software_name }}"
-    enabled: false
-    status: null
+    name: "$software_name"
+    service_name: "$software_name" # System service name (may differ from display name)
 
+# File configurations - Important files related to the software
+files:
+  config: # Main configuration file
+    path: "/etc/$software_name/$software_name.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  log: # Main log file
+    path: "/var/log/$software_name/$software_name.log"
+    owner: root
+    group: root
+    mode: "0644"
+
+# Directory configurations - Important directories with ownership and permissions
 directories:
   config: # Main configuration directory
-    path: "/etc/{{ software_name }}"
+    path: "/etc/$software_name"
     owner: root
     group: root
     mode: "0755"
-  dotconf: # Dot conf directory, with separated configuration files, if applicable
-    path: "/etc/{{ software_name }}/conf.d"
+  dotconf: # Dot conf directory with separated configuration files, if applicable
+    path: "/etc/$software_name/conf.d"
     owner: root
     group: root
     mode: "0755"
-  log:
-    path: "/var/log/{{ software_name }}"
+  log: # Log directory
+    path: "/var/log/$software_name"
     owner: root
     group: root
     mode: "0755"
-  data: null # Main data directory (what you need to backup), default is undefined
+  data: ~ # Main data directory (what you need to backup), default is undefined
 
+# Command definitions - Common commands and their configurations
+commands:
+  start: # Command to start the software
+    command: "$software_name"
+    arguments: ["start"]
+    options: ~ # Command-specific options
+  stop: # Command to stop the software
+    command: "$software_name"
+    arguments: ["stop"]
+    options: ~ # Command-specific options
+  status: # Command to check status
+    command: "$software_name"
+    arguments: ["status"]
+    options: ~ # Command-specific options
+
+# Process definitions - Running processes related to the software
 processes:
   default: 
-    name: "{{ software_name }}"
-    command: null
-    args: null
+    path: "$software_name" # Process name or path
+    owner: root # Process owner
+    group: root # Process group
 
+# Port configurations - Network ports used by the software
 ports:
   default:
-    number: null
-    protocol: tcp
-    service: null
+    port: ~ # Port number, default is undefined
+    protocol: tcp # Network protocol (tcp, udp, etc.)
 
+# Container configurations - Docker/container related settings
 containers:
-  upstream:
-    name: "{{ software_name }}"
-    image: "{{ software_name }}"
-    tag: latest
+  upstream: # Official upstream container
+    name: "$software_name"
+    image: "$software_name"
+    version: latest
+    network: ~ # Network configuration, default is undefined
+    ports: [] # Array of ports to expose, default is empty
+    volumes: [] # Array of volumes to mount, default is empty
+    nodaemon_args: ~ # Arguments for non-daemon mode, default is undefined
+    env: [] # Array of environment variables, default is empty
+  bitnami: {} # Bitnami container configuration (empty by default)
 
-charts: {}
+# Helm chart configurations - Kubernetes deployment charts
+charts:
+  upstream: {} # Official upstream chart configuration
+  bitnami: {} # Bitnami chart configuration
 
-repos: {}
+# Repository configurations - Package repositories and sources
+repos:
+  upstream: {} # Official upstream repository
+  "16": {} # Ubuntu 16.04 LTS repository
+  "18": {} # Ubuntu 18.04 LTS repository
 
+# URL configurations - Important links related to the software
 urls:
-  website: null
-  sbom: null
-  issues: null
-  documentation: null
-  support: null
-  source: null
-  license: null
-  changelog: null
-  download: null
-  icon: null
+  website: ~ # Official website URL (same for all providers)
+  sbom: ~ # Software Bill of Materials URL
+  issues: ~ # Issue tracker URL (GitHub issues, Jira, etc.)
+  documentation: ~ # Official documentation URL
+  support: ~ # Support/help URL
+  source: ~ # Source code repository URL
+  license: ~ # License information URL
+  changelog: ~ # Changelog/release notes URL
+  download: ~ # Official download URL
+  icon: ~ # Icon or logo URL
+  # Provider-specific URLs should be defined in provider templates using provider name as key
+  # Example: urls.apt, urls.brew, urls.winget, etc.
 
-language: null # Main programming language
+# Programming language - Main language the software is written in
+language: ~ # e.g., "python", "java", "go", "javascript"
 
-description: null # Default is undefined.
+# Software description - Brief description of what the software does
+description: ~ # Brief description of the software's purpose and functionality
 
+# Category information - Classification of the software
 category:
-  default: null # Default is undefined.
-  sub: null # Default is undefined.
-  tags: [] # Default is empty list.
+  default: ~ # Primary category (e.g., "web-server", "database", "development-tool")
+  sub: ~ # Subcategory for more specific classification
+  tags: ~ # Array of tags for additional categorization
 
-license: null # Default is undefined.
+# License information - Software licensing
+license: ~ # License type (e.g., "MIT", "Apache-2.0", "GPL-3.0")
 
-platforms: [] # Array of supported platforms, e.g. [linux, windows, macos]
+# Platform support - Operating systems and architectures supported by the SOFTWARE
+# This should NOT be defined in provider templates as it's a property of the software, not the provider
+platforms: [] # Array of supported platforms, e.g., ["linux", "windows", "macos"]

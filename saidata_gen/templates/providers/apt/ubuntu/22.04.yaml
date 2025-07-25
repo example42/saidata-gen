@@ -1,0 +1,11 @@
+# Ubuntu 22.04 LTS (Jammy Jellyfish) specific APT overrides
+version: 0.1
+
+# Ubuntu 22.04-specific repository URL
+urls:
+  apt: "https://packages.ubuntu.com/jammy/{{ software_name }}"
+
+# Ubuntu 22.04-specific package naming (if different)
+# packages:
+#   default:
+#     name: "{{ software_name }}-jammy"

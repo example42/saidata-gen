@@ -1,0 +1,12 @@
+# Chocolatey base configuration
+version: 0.1
+
+# Chocolatey-specific service configuration (enabled by default on Windows)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Chocolatey-specific URL
+urls:
+  choco: "https://chocolatey.org/packages/{{ software_name }}"

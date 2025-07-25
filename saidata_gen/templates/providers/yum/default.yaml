@@ -1,0 +1,19 @@
+# YUM base configuration - common settings across all YUM-based distributions
+# Only include configurations that differ from defaults.yaml
+version: 0.1
+
+# YUM-specific service configuration (enabled by default, uses systemd/init.d)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# YUM-specific directory configuration (different mode from default)
+directories:
+  config:
+    mode: "0644"
+
+# YUM-specific file configuration (init file for RHEL/CentOS family)
+files:
+  init:
+    path: "/etc/sysconfig/{{ software_name }}"

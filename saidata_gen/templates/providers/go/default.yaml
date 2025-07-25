@@ -1,0 +1,14 @@
+# Go (Go modules) base configuration - common settings across all platforms
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Go-specific package configuration
+packages:
+  default:
+    name: "{{ software_name }}"
+    version: latest
+    install_options: ["@latest"] # Install latest version by default
+
+# Go-specific URL
+urls:
+  go: "https://pkg.go.dev/{{ software_name }}"

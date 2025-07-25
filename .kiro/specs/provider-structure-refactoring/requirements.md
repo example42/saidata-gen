@@ -97,3 +97,41 @@ When generating saidata for a given software, a directory with the software name
 2. WHEN creating new provider files THEN there SHALL be clear examples showing the correct format
 3. WHEN working with provider configurations THEN there SHALL be guidelines for determining what should be included in provider files
 4. WHEN troubleshooting provider issues THEN there SHALL be documentation explaining the configuration merging process
+
+### Requirement 9
+
+**User Story:** As a developer working with different package managers, I want to be able to override package names when they differ between providers, so that the system can correctly identify packages across different ecosystems.
+
+#### Acceptance Criteria
+
+1. WHEN a package has different names across providers THEN provider files SHALL be able to override the package name
+2. WHEN a package name override is specified THEN it SHALL use the `packages.default.name` configuration key
+3. WHEN no package name override is provided THEN the system SHALL use the software name as the package name
+4. WHEN processing package configurations THEN provider-specific package names SHALL take precedence over the default software name
+5. WHEN documenting provider templates THEN there SHALL be clear examples of package name overrides (e.g., Apache HTTP Server as 'apache2' on APT vs 'httpd' on YUM)
+
+### Requirement 10
+
+**User Story:** As a developer maintaining saidata configurations, I want platform support to be defined only at the software level, so that platform information is not duplicated across provider templates.
+
+#### Acceptance Criteria
+
+1. WHEN defining platform support THEN it SHALL be specified only in the `defaults.yaml` file
+2. WHEN platform support is defined THEN it SHALL indicate which platforms the software supports, not which platforms the provider supports
+3. WHEN provider templates are created THEN they SHALL NOT include platform configuration
+4. WHEN processing configurations THEN provider platform support SHALL be implicit from the provider type (e.g., APT implies Linux support, Winget implies Windows support)
+5. WHEN documenting the system THEN there SHALL be clear guidance that platforms represent software support, not provider availability
+
+### Requirement 11
+
+**User Story:** As a developer working with diverse Linux distributions and OS versions, I want provider templates to support hierarchical configurations for handling OS/distro/version-specific differences, so that the same provider can have different configurations based on the target environment.
+
+#### Acceptance Criteria
+
+1. WHEN provider templates are organized THEN they SHALL support a hierarchical directory structure (e.g., `yum/rhel.yaml`, `yum/centos.yaml`)
+2. WHEN configurations are processed THEN they SHALL be merged in hierarchical order: defaults → provider base → distro-specific → version-specific
+3. WHEN a provider has distro-specific differences THEN each distro SHALL have its own template file within the provider directory
+4. WHEN a provider has version-specific differences THEN version-specific templates SHALL be organized in subdirectories (e.g., `yum/rhel/8.yaml`)
+5. WHEN the same provider is used across different environments THEN the system SHALL automatically select and merge the appropriate template hierarchy
+6. WHEN analyzing templates THEN the analysis tools SHALL support both flat and hierarchical provider structures
+7. WHEN documenting the system THEN there SHALL be clear examples showing how hierarchical templates handle real-world scenarios (e.g., Apache HTTP Server package names across different distros)

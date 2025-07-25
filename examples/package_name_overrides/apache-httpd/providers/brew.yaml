@@ -1,0 +1,22 @@
+# Homebrew specific default overrides for Apache HTTP Server
+version: 0.1
+
+# Package name override - Apache is called 'httpd' on Homebrew
+packages:
+  default:
+    name: httpd
+
+# Homebrew-specific directory configuration
+directories:
+  config:
+    path: "/opt/homebrew/etc/httpd"
+    group: admin
+
+# Homebrew-specific file configuration
+files:
+  config:
+    path: "/opt/homebrew/etc/httpd/httpd.conf"
+
+# Homebrew-specific URL
+urls:
+  brew: "https://brew.sh/formula/httpd"

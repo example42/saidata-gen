@@ -1,0 +1,23 @@
+# Pacman (Arch Linux) provider template
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Pacman-specific service configuration (systemd-based)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Arch Linux specific directory configuration
+directories:
+  config:
+    mode: "0644"
+
+# Arch Linux specific file configuration
+files:
+  init:
+    path: "/etc/default/{{ software_name }}"
+
+# Pacman-specific URL
+urls:
+  pacman: "https://archlinux.org/packages/?name={{ software_name }}"
