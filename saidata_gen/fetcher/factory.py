@@ -86,6 +86,15 @@ class FetcherFactory:
             True if the fetcher is available, False otherwise.
         """
         return name in self._fetcher_classes
+    
+    def get_registered_fetchers(self) -> Dict[str, Type[RepositoryFetcher]]:
+        """
+        Get all registered fetcher classes.
+        
+        Returns:
+            Dictionary mapping fetcher names to their classes.
+        """
+        return self._fetcher_classes.copy()
 
 
 # Create a singleton instance

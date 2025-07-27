@@ -32,11 +32,15 @@ saidata-gen generate [OPTIONS] SOFTWARE_NAME
 | Option | Short | Type | Default | Description | Environment Variable |
 |--------|-------|------|---------|-------------|---------------------|
 | `--providers` | `-p` | TEXT | all | Comma-separated list of providers | `SAIDATA_GEN_PROVIDERS` |
-| `--use-rag` | | FLAG | false | Use RAG for enhanced generation | `SAIDATA_GEN_USE_RAG` |
-| `--rag-provider` | | CHOICE | openai | RAG provider (openai/anthropic/local) | `SAIDATA_GEN_RAG_PROVIDER` |
+| `--ai` | | FLAG | false | Enable AI enhancement for missing fields | `SAIDATA_GEN_AI` |
+| `--ai-provider` | | CHOICE | openai | AI provider (openai/anthropic/local) | `SAIDATA_GEN_AI_PROVIDER` |
+| `--use-rag` | | FLAG | false | Use RAG for enhanced generation (deprecated, use --ai) | `SAIDATA_GEN_USE_RAG` |
+| `--rag-provider` | | CHOICE | openai | RAG provider (deprecated, use --ai-provider) | `SAIDATA_GEN_RAG_PROVIDER` |
+| `--enhancement-types` | | TEXT | all | AI enhancement types (description,categorization,field_completion) | `SAIDATA_GEN_ENHANCEMENT_TYPES` |
 | `--no-validate` | | FLAG | false | Skip schema validation | `SAIDATA_GEN_NO_VALIDATE` |
 | `--format` | `-f` | CHOICE | yaml | Output format (yaml/json) | `SAIDATA_GEN_FORMAT` |
 | `--output` | `-o` | PATH | - | Output file path | `SAIDATA_GEN_OUTPUT` |
+| `--output-structure` | | CHOICE | flat | Output structure (flat/hierarchical) | `SAIDATA_GEN_OUTPUT_STRUCTURE` |
 | `--confidence-threshold` | | FLOAT | 0.7 | Minimum confidence threshold | `SAIDATA_GEN_CONFIDENCE_THRESHOLD` |
 
 #### Examples
@@ -48,14 +52,23 @@ saidata-gen generate nginx
 # Use specific providers
 saidata-gen generate nginx --providers apt,brew,docker
 
-# Generate with AI enhancement
-saidata-gen generate nginx --use-rag --rag-provider openai
+# Generate with AI enhancement (new recommended way)
+saidata-gen generate nginx --ai --ai-provider openai
+
+# AI enhancement with specific types
+saidata-gen generate nginx --ai --enhancement-types description,field_completion
+
+# Generate with hierarchical output structure
+saidata-gen generate nginx --output-structure hierarchical
 
 # Save to file with JSON format
 saidata-gen generate nginx --output nginx.json --format json
 
 # Skip validation with custom confidence threshold
 saidata-gen generate nginx --no-validate --confidence-threshold 0.8
+
+# Legacy RAG syntax (still supported)
+saidata-gen generate nginx --use-rag --rag-provider anthropic
 ```
 
 #### Exit Codes
@@ -156,10 +169,14 @@ saidata-gen batch [OPTIONS]
 | `--input` | `-i` | PATH | **required** | Input file with software names | `SAIDATA_GEN_BATCH_INPUT` |
 | `--output` | `-o` | PATH | current dir | Output directory | `SAIDATA_GEN_BATCH_OUTPUT` |
 | `--providers` | `-p` | TEXT | all | Comma-separated providers list | `SAIDATA_GEN_PROVIDERS` |
-| `--use-rag` | | FLAG | false | Use RAG for enhanced generation | `SAIDATA_GEN_USE_RAG` |
-| `--rag-provider` | | CHOICE | openai | RAG provider | `SAIDATA_GEN_RAG_PROVIDER` |
+| `--ai` | | FLAG | false | Enable AI enhancement for missing fields | `SAIDATA_GEN_AI` |
+| `--ai-provider` | | CHOICE | openai | AI provider (openai/anthropic/local) | `SAIDATA_GEN_AI_PROVIDER` |
+| `--use-rag` | | FLAG | false | Use RAG for enhanced generation (deprecated) | `SAIDATA_GEN_USE_RAG` |
+| `--rag-provider` | | CHOICE | openai | RAG provider (deprecated) | `SAIDATA_GEN_RAG_PROVIDER` |
+| `--enhancement-types` | | TEXT | all | AI enhancement types | `SAIDATA_GEN_ENHANCEMENT_TYPES` |
 | `--no-validate` | | FLAG | false | Skip schema validation | `SAIDATA_GEN_NO_VALIDATE` |
 | `--format` | `-f` | CHOICE | yaml | Output format | `SAIDATA_GEN_FORMAT` |
+| `--output-structure` | | CHOICE | flat | Output structure (flat/hierarchical) | `SAIDATA_GEN_OUTPUT_STRUCTURE` |
 | `--max-concurrent` | | INTEGER | 5 | Maximum concurrent processing | `SAIDATA_GEN_MAX_CONCURRENT` |
 | `--continue-on-error` | | FLAG | true | Continue on individual failures | `SAIDATA_GEN_CONTINUE_ON_ERROR` |
 | `--fail-fast` | | FLAG | false | Stop on first failure | - |
@@ -189,8 +206,8 @@ saidata-gen batch --input software_list.txt
 # Save to specific directory
 saidata-gen batch --input software_list.txt --output ./generated/
 
-# Use specific providers with RAG
-saidata-gen batch --input software_list.txt --providers apt,brew --use-rag
+# Use specific providers with AI enhancement
+saidata-gen batch --input software_list.txt --providers apt,brew --ai --ai-provider openai
 
 # CI/CD friendly with JSON progress
 saidata-gen batch --input software_list.txt --progress-format json
@@ -210,6 +227,78 @@ saidata-gen batch --input software_list.txt --fail-fast
 - `0`: All packages processed successfully
 - `1`: One or more packages failed (unless `--continue-on-error` is used)
 - `130`: Interrupted by user (Ctrl+C)
+
+---
+
+### `list-providers`
+
+List all available providers and their status.
+
+```bash
+saidata-gen list-providers [OPTIONS]
+```
+
+#### Options
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--show-templates` | `-t` | Show template file paths |
+| `--validate` | `-v` | Validate provider templates |
+| `--format` | `-f` | Output format (table/json/yaml) |
+
+#### Examples
+
+```bash
+# List all providers
+saidata-gen list-providers
+
+# Show template paths and validation status
+saidata-gen list-providers --show-templates --validate
+
+# Output as JSON for scripting
+saidata-gen list-providers --format json
+```
+
+#### Exit Codes
+
+- `0`: Success
+- `1`: Error listing providers
+
+---
+
+### `validate-config`
+
+Validate provider configurations and suggest optimizations.
+
+```bash
+saidata-gen validate-config [OPTIONS]
+```
+
+#### Options
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--provider` | `-p` | Validate specific provider |
+| `--show-suggestions` | `-s` | Show optimization suggestions |
+| `--quality-threshold` | | Minimum quality score threshold (0.0-1.0) |
+
+#### Examples
+
+```bash
+# Validate all provider configurations
+saidata-gen validate-config
+
+# Validate specific provider with suggestions
+saidata-gen validate-config --provider apt --show-suggestions
+
+# Check configurations with quality threshold
+saidata-gen validate-config --quality-threshold 0.8
+```
+
+#### Exit Codes
+
+- `0`: All configurations valid
+- `1`: Validation issues found
 
 ---
 
@@ -299,11 +388,15 @@ All CLI options can be configured using environment variables:
 ### Generation Options
 
 - `SAIDATA_GEN_PROVIDERS`: Default providers list
-- `SAIDATA_GEN_USE_RAG`: Enable RAG by default (true/false)
-- `SAIDATA_GEN_RAG_PROVIDER`: Default RAG provider
+- `SAIDATA_GEN_AI`: Enable AI enhancement by default (true/false)
+- `SAIDATA_GEN_AI_PROVIDER`: Default AI provider (openai/anthropic/local)
+- `SAIDATA_GEN_ENHANCEMENT_TYPES`: Default AI enhancement types
+- `SAIDATA_GEN_USE_RAG`: Enable RAG by default (deprecated, use SAIDATA_GEN_AI)
+- `SAIDATA_GEN_RAG_PROVIDER`: Default RAG provider (deprecated, use SAIDATA_GEN_AI_PROVIDER)
 - `SAIDATA_GEN_NO_VALIDATE`: Skip validation by default (true/false)
 - `SAIDATA_GEN_FORMAT`: Default output format
 - `SAIDATA_GEN_OUTPUT`: Default output path
+- `SAIDATA_GEN_OUTPUT_STRUCTURE`: Default output structure (flat/hierarchical)
 - `SAIDATA_GEN_CONFIDENCE_THRESHOLD`: Default confidence threshold
 
 ### Batch Processing
@@ -314,13 +407,23 @@ All CLI options can be configured using environment variables:
 - `SAIDATA_GEN_CONTINUE_ON_ERROR`: Continue on error by default (true/false)
 - `SAIDATA_GEN_PROGRESS_FORMAT`: Default progress format
 
-### RAG Configuration
+### AI Configuration
 
 - `OPENAI_API_KEY`: OpenAI API key
 - `ANTHROPIC_API_KEY`: Anthropic API key
-- `SAIDATA_GEN_RAG_MODEL`: Default model name
-- `SAIDATA_GEN_RAG_TEMPERATURE`: Default temperature
-- `SAIDATA_GEN_RAG_MAX_TOKENS`: Default max tokens
+- `SAIDATA_GEN_AI_MODEL`: Default AI model name
+- `SAIDATA_GEN_AI_TEMPERATURE`: Default temperature (0.0-1.0)
+- `SAIDATA_GEN_AI_MAX_TOKENS`: Default max tokens
+- `SAIDATA_GEN_AI_TIMEOUT`: AI request timeout (seconds)
+- `SAIDATA_GEN_AI_MAX_RETRIES`: Maximum retry attempts
+- `SAIDATA_GEN_AI_RATE_LIMIT_RPM`: Rate limit requests per minute
+- `SAIDATA_GEN_AI_RATE_LIMIT_TPM`: Rate limit tokens per minute
+
+#### Legacy RAG Configuration (deprecated)
+
+- `SAIDATA_GEN_RAG_MODEL`: Default model name (use SAIDATA_GEN_AI_MODEL)
+- `SAIDATA_GEN_RAG_TEMPERATURE`: Default temperature (use SAIDATA_GEN_AI_TEMPERATURE)
+- `SAIDATA_GEN_RAG_MAX_TOKENS`: Default max tokens (use SAIDATA_GEN_AI_MAX_TOKENS)
 
 ### Cache and Performance
 
@@ -382,6 +485,79 @@ export SAIDATA_GEN_LOG_FORMAT="%(levelname)s: %(message)s"
 saidata-gen generate nginx
 ```
 
+## AI Enhancement Configuration
+
+### Setting Up AI Providers
+
+#### OpenAI Configuration
+
+```bash
+# Set API key via environment variable
+export OPENAI_API_KEY="your-openai-api-key"
+
+# Or store securely using the API key manager
+python -c "
+from saidata_gen.ai.enhancer import APIKeyManager
+manager = APIKeyManager()
+manager.store_api_key('openai', 'your-openai-api-key')
+"
+
+# Configure model and parameters
+export SAIDATA_GEN_AI_MODEL="gpt-3.5-turbo"
+export SAIDATA_GEN_AI_TEMPERATURE="0.1"
+export SAIDATA_GEN_AI_MAX_TOKENS="1000"
+```
+
+#### Anthropic Configuration
+
+```bash
+# Set API key
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
+
+# Configure model
+export SAIDATA_GEN_AI_MODEL="claude-3-haiku-20240307"
+export SAIDATA_GEN_AI_PROVIDER="anthropic"
+```
+
+#### Local Model Configuration
+
+```bash
+# For local models (e.g., Ollama)
+export SAIDATA_GEN_AI_PROVIDER="local"
+export SAIDATA_GEN_AI_MODEL="llama2"
+export SAIDATA_GEN_AI_BASE_URL="http://localhost:11434"
+```
+
+### AI Enhancement Types
+
+Control what AI enhances with `--enhancement-types`:
+
+- `description`: Generate software descriptions
+- `categorization`: Determine categories and tags
+- `field_completion`: Fill missing URLs, license, platforms
+
+```bash
+# Enhance only descriptions
+saidata-gen generate nginx --ai --enhancement-types description
+
+# Enhance descriptions and categories
+saidata-gen generate nginx --ai --enhancement-types description,categorization
+
+# Enhance all fields (default)
+saidata-gen generate nginx --ai --enhancement-types all
+```
+
+### Rate Limiting and Performance
+
+Configure AI rate limits to avoid API throttling:
+
+```bash
+export SAIDATA_GEN_AI_RATE_LIMIT_RPM=60    # Requests per minute
+export SAIDATA_GEN_AI_RATE_LIMIT_TPM=90000 # Tokens per minute
+export SAIDATA_GEN_AI_MAX_RETRIES=3        # Retry attempts
+export SAIDATA_GEN_AI_TIMEOUT=30           # Request timeout
+```
+
 ## Development Tools
 
 ### Provider Template Analysis
@@ -400,6 +576,36 @@ python scripts/analyze_provider_templates.py
 ```
 
 The analysis script helps maintain clean provider templates by identifying configurations that duplicate the defaults and can be safely removed.
+
+### Configuration Validation
+
+Use the configuration validator to ensure template quality:
+
+```bash
+# Validate all provider configurations
+saidata-gen validate-config
+
+# Validate specific provider with suggestions
+saidata-gen validate-config --provider apt --show-suggestions
+
+# Check quality threshold
+saidata-gen validate-config --quality-threshold 0.8
+```
+
+### Provider Template Cleanup
+
+Clean up redundant configurations automatically:
+
+```bash
+# Analyze what can be cleaned up (dry run)
+python scripts/cleanup_provider_configs.py --provider apt --dry-run
+
+# Apply cleanup
+python scripts/cleanup_provider_configs.py --provider apt
+
+# Clean up all providers
+python scripts/cleanup_provider_configs.py --all
+```
 
 ## Performance Tips
 

@@ -9,8 +9,10 @@ set -e
 SAIDATA_CONFIG="${SAIDATA_CONFIG:-examples/configs/ci-cd.yaml}"
 SAIDATA_OUTPUT_DIR="${SAIDATA_OUTPUT_DIR:-./saidata-output}"
 SAIDATA_LOG_LEVEL="${SAIDATA_LOG_LEVEL:-INFO}"
-SAIDATA_PROVIDERS="${SAIDATA_PROVIDERS:-apt,brew,pypi,npm,docker}"
+SAIDATA_PROVIDERS="${SAIDATA_PROVIDERS:-apt,brew,yum,dnf,zypper,pacman,apk,snap,flatpak,winget,choco,scoop,npm,pypi,cargo,gem,composer,nuget,maven,gradle,go,docker,helm,nix,nixpkgs,guix,spack,portage,emerge,xbps,slackpkg,opkg,pkg}"
 SAIDATA_CONFIDENCE_THRESHOLD="${SAIDATA_CONFIDENCE_THRESHOLD:-0.7}"
+SAIDATA_AI_ENABLED="${SAIDATA_AI_ENABLED:-false}"
+SAIDATA_AI_PROVIDER="${SAIDATA_AI_PROVIDER:-openai}"
 SOFTWARE_LIST="${SOFTWARE_LIST:-software-inventory.txt}"
 MAX_FAILURES="${MAX_FAILURES:-20}"  # Maximum percentage of failures allowed
 
@@ -127,10 +129,16 @@ process_software_list() {
         log_info "Processing: $software"
         
         # Generate metadata
+        local ai_flags=""
+        if [ "$SAIDATA_AI_ENABLED" = "true" ]; then
+            ai_flags="--ai --ai-provider $SAIDATA_AI_PROVIDER"
+        fi
+        
         if saidata-gen --config "$SAIDATA_CONFIG" generate "$software" \
             --output "$output_file" \
             --providers "$SAIDATA_PROVIDERS" \
             --confidence-threshold "$SAIDATA_CONFIDENCE_THRESHOLD" \
+            $ai_flags \
             > "$log_file" 2>&1; then
             
             # Validate generated file
@@ -214,6 +222,8 @@ generate_summary_report() {
     "output_directory": "$SAIDATA_OUTPUT_DIR",
     "providers": "$SAIDATA_PROVIDERS",
     "confidence_threshold": "$SAIDATA_CONFIDENCE_THRESHOLD",
+    "ai_enabled": "$SAIDATA_AI_ENABLED",
+    "ai_provider": "$SAIDATA_AI_PROVIDER",
     "log_level": "$SAIDATA_LOG_LEVEL"
   },
   "artifacts": {

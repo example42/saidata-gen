@@ -11,6 +11,13 @@ The template engine is a core component of the saidata-gen tool that provides po
 - **Template Inclusion**: Include other templates to promote reuse
 - **Provider Overrides**: Override specific paths in the base template for different providers
 - **Platform-Specific Sections**: Include sections only for specific platforms
+- **Hierarchical Template Support**: Load templates from both flat files and hierarchical directory structures
+- **Override-Only Generation**: Generate provider configurations containing only overrides from defaults
+- **Enhanced Merging**: Type-safe merging with null removal, override precedence, and redundancy elimination
+- **Data Validation**: Automatic validation of type overrides and new key additions
+- **Intelligent Caching**: Provider support decisions cached with configurable TTL and storage backends
+- **Performance Optimization**: Compiled regex patterns, early returns, and optimized deep copying
+- **Security Enhancements**: Path validation, recursion depth limits, and safe expression evaluation
 
 ## Usage
 
@@ -18,9 +25,19 @@ The template engine is a core component of the saidata-gen tool that provides po
 
 ```python
 from saidata_gen.generator.templates import TemplateEngine
+from saidata_gen.core.cache import CacheManager, CacheConfig, CacheBackend
 
-# Create a template engine
+# Create a template engine with default caching
 engine = TemplateEngine()
+
+# Or create with custom cache configuration
+cache_config = CacheConfig(
+    backend=CacheBackend.MEMORY,
+    default_ttl=3600,  # 1 hour cache
+    max_size=1000
+)
+cache_manager = CacheManager(cache_config)
+engine = TemplateEngine(cache_manager=cache_manager)
 
 # Apply a template
 result = engine.apply_template(
@@ -29,6 +46,27 @@ result = engine.apply_template(
     platforms=["linux", "macos"],
     context={"current_user": "admin"}
 )
+```
+
+### Override-Only Template Generation
+
+The template engine now supports generating provider configurations that contain only overrides from defaults:
+
+```python
+# Generate only provider-specific overrides
+overrides = engine.apply_provider_overrides_only("nginx", "apt", repository_data)
+
+# Merge overrides with defaults
+merged = engine.merge_with_defaults(engine.default_template, overrides)
+
+# Check if a provider is supported
+is_supported = engine.is_provider_supported("nginx", "apt", repository_data)
+
+# Clear provider support cache when needed
+cleared_count = engine.clear_provider_support_cache("nginx", "apt")
+
+# Get cache statistics
+cache_stats = engine.get_provider_support_cache_stats()
 ```
 
 ### Variable Substitution
@@ -196,11 +234,20 @@ result = engine._process_template(template, {"software_name": "nginx"})
 
 ## Template Directory Structure
 
-The template engine looks for templates in the following locations:
+The template engine supports both flat and hierarchical template structures:
 
+### Flat Structure
 - `defaults.yaml`: Default template for all software
-- `providers/*.yaml`: Provider-specific templates
+- `providers/*.yaml`: Provider-specific templates (e.g., `apt.yaml`, `brew.yaml`)
 - `*.yaml`: Other templates that can be included
+
+### Hierarchical Structure
+- `defaults.yaml`: Default template for all software
+- `providers/{provider}/default.yaml`: Provider-specific templates in directories
+- `providers/{provider}/{os}.yaml`: OS-specific overrides (future enhancement)
+- `*.yaml`: Other templates that can be included
+
+The engine automatically detects and loads both structures, with hierarchical templates taking precedence when both exist for the same provider.
 
 ## Best Practices
 

@@ -1,0 +1,16 @@
+# Flatpak Debian-specific overrides
+version: 0.1
+
+# Debian-specific directory configuration (sandboxed apps)
+directories:
+  config:
+    path: "/var/lib/flatpak/app/{{ software_name }}"
+    mode: "0755"
+  data:
+    path: "~/.var/app/{{ software_name }}"
+    mode: "0755"
+
+# Debian-specific file configuration
+files:
+  config:
+    path: "~/.var/app/{{ software_name }}/config/{{ software_name }}.conf"

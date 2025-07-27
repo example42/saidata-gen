@@ -1,0 +1,16 @@
+# Nix Linux-specific overrides
+version: 0.1
+
+# Linux-specific directory configuration
+directories:
+  config:
+    path: "~/.config/nix"
+    mode: "0755"
+  data:
+    path: "/nix/store"
+    mode: "0755"
+
+# Linux-specific file configuration
+files:
+  config:
+    path: "~/.config/nix/nix.conf"

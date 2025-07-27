@@ -1,7 +1,16 @@
 #!/bin/bash
 
 # Batch Processing Script for Saidata Generator
-# Processes multiple software packages efficiently
+# Processes multiple software packages efficiently with optional AI enhancement
+#
+# Usage:
+#   ./batch-processing.sh [software_list] [output_dir] [config_file] [parallel_jobs] [ai_enabled] [ai_provider]
+#
+# Examples:
+#   ./batch-processing.sh                                    # Use defaults
+#   ./batch-processing.sh software.txt ./output             # Custom list and output
+#   ./batch-processing.sh software.txt ./output config.yaml 8 true openai  # With AI enhancement
+#   ./batch-processing.sh software.txt ./output config.yaml 4 true anthropic  # With Anthropic AI
 
 set -e
 
@@ -10,12 +19,18 @@ SOFTWARE_LIST="${1:-examples/data/software-list.txt}"
 OUTPUT_DIR="${2:-./batch-output}"
 CONFIG_FILE="${3:-examples/configs/ci-cd.yaml}"
 PARALLEL_JOBS="${4:-4}"
+AI_ENABLED="${5:-false}"
+AI_PROVIDER="${6:-openai}"
 
 echo "=== Saidata Generator - Batch Processing ==="
 echo "Software List: $SOFTWARE_LIST"
 echo "Output Directory: $OUTPUT_DIR"
 echo "Configuration: $CONFIG_FILE"
 echo "Parallel Jobs: $PARALLEL_JOBS"
+echo "AI Enhancement: $AI_ENABLED"
+if [ "$AI_ENABLED" = "true" ]; then
+    echo "AI Provider: $AI_PROVIDER"
+fi
 echo
 
 # Create necessary directories
@@ -56,9 +71,19 @@ process_software() {
     echo "Processing: $software"
     
     # Generate metadata with logging
+    # Use comprehensive provider list covering all major package managers
+    local providers="apt,brew,yum,dnf,zypper,pacman,apk,snap,flatpak,winget,choco,scoop,npm,pypi,cargo,gem,composer,nuget,maven,gradle,go,docker,helm,nix,nixpkgs,guix,spack,portage,emerge,xbps,slackpkg,opkg,pkg"
+    
+    # Add AI flags if enabled
+    local ai_flags=""
+    if [ "$AI_ENABLED" = "true" ]; then
+        ai_flags="--ai --ai-provider $AI_PROVIDER"
+    fi
+    
     if saidata-gen --config "$CONFIG_FILE" generate "$software" \
         --output "$output_file" \
-        --providers apt,brew,pypi,npm,docker \
+        --providers "$providers" \
+        $ai_flags \
         > "$log_file" 2>&1; then
         
         # Validate the generated file
@@ -77,7 +102,7 @@ process_software() {
 
 # Export function for parallel execution
 export -f process_software
-export OUTPUT_DIR CONFIG_FILE
+export OUTPUT_DIR CONFIG_FILE AI_ENABLED AI_PROVIDER
 
 # Initialize results file
 echo "software,status,timestamp" > "$OUTPUT_DIR/reports/results.csv"
@@ -115,6 +140,8 @@ Configuration:
 - Output Directory: $OUTPUT_DIR
 - Configuration File: $CONFIG_FILE
 - Parallel Jobs: $PARALLEL_JOBS
+- AI Enhancement: $AI_ENABLED
+- AI Provider: $AI_PROVIDER
 
 Results:
 - Total Packages: $total_count

@@ -1,4 +1,4 @@
-# Nixpkgs provider template
+# Nixpkgs base configuration - common settings across all platforms
 # Only includes configurations that differ from defaults.yaml
 version: 0.1
 
@@ -7,20 +7,6 @@ packages:
   default:
     name: "{{ software_name }}"
     version: latest
-
-# Nixpkgs-specific directory configuration
-directories:
-  config:
-    path: "~/.config/nixpkgs"
-    mode: "0755"
-  data:
-    path: "/nix/store"
-    mode: "0755"
-
-# Nixpkgs-specific file configuration
-files:
-  config:
-    path: "~/.config/nixpkgs/config.nix"
 
 # Nixpkgs-specific URL
 urls:

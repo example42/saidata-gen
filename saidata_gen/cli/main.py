@@ -191,10 +191,14 @@ def cli(ctx, config, verbose):
 @click.option('--providers', '-p', 
               default=lambda: os.getenv('SAIDATA_GEN_PROVIDERS'),
               help='Comma-separated list of providers (apt,brew,winget,npm,pypi,cargo,etc.) (env: SAIDATA_GEN_PROVIDERS)')
+@click.option('--ai', is_flag=True, 
+              help='Enable AI enhancement for metadata generation (env: SAIDATA_GEN_AI)')
+@click.option('--ai-provider', default='openai', type=click.Choice(['openai', 'anthropic', 'local']), 
+              help='AI provider to use for enhancement (env: SAIDATA_GEN_AI_PROVIDER)')
 @click.option('--use-rag', is_flag=True, 
-              help='Use RAG for enhanced metadata generation (env: SAIDATA_GEN_USE_RAG)')
+              help='Use RAG for enhanced metadata generation (deprecated: use --ai) (env: SAIDATA_GEN_USE_RAG)')
 @click.option('--rag-provider', default='openai', type=click.Choice(['openai', 'anthropic', 'local']), 
-              help='RAG provider to use (env: SAIDATA_GEN_RAG_PROVIDER)')
+              help='RAG provider to use (deprecated: use --ai-provider) (env: SAIDATA_GEN_RAG_PROVIDER)')
 @click.option('--no-validate', is_flag=True, 
               default=lambda: os.getenv('SAIDATA_GEN_NO_VALIDATE', '').lower() in ['true', '1', 'yes'],
               help='Skip schema validation (env: SAIDATA_GEN_NO_VALIDATE)')
@@ -205,13 +209,34 @@ def cli(ctx, config, verbose):
               help='Output file path (env: SAIDATA_GEN_OUTPUT)')
 @click.option('--confidence-threshold', default=0.7, type=float, 
               help='Minimum confidence threshold for generated data (env: SAIDATA_GEN_CONFIDENCE_THRESHOLD)')
+@click.option('--directory-structure', is_flag=True,
+              help='Generate software-specific directory structure with defaults.yaml and provider overrides')
+@click.option('--comprehensive', is_flag=True,
+              help='Generate comprehensive metadata file with all provider information merged')
 @click.pass_context
-def generate(ctx, software_name, providers, use_rag, rag_provider, no_validate, format, output, confidence_threshold):
+def generate(ctx, software_name, providers, ai, ai_provider, use_rag, rag_provider, no_validate, format, output, confidence_threshold, directory_structure, comprehensive):
     """
     Generate metadata for a software package.
     
     This command generates comprehensive saidata YAML metadata for the specified
     software by gathering information from multiple package repositories and sources.
+    
+    AI Enhancement:
+      The --ai flag enables AI-powered metadata enhancement using LLMs to fill
+      missing fields and improve data quality. AI enhancement works by:
+      - Identifying missing or incomplete metadata fields
+      - Using LLMs to generate descriptions, categorizations, and URLs
+      - Merging AI-generated data with repository data (repository data takes precedence)
+      - Providing confidence scores for AI-enhanced fields
+    
+    Environment Variables:
+      SAIDATA_GEN_AI: Enable AI enhancement by default (true/false)
+      SAIDATA_GEN_AI_PROVIDER: Default AI provider (openai/anthropic/local)
+      SAIDATA_GEN_PROVIDERS: Default providers list
+      SAIDATA_GEN_OUTPUT: Default output file path
+      SAIDATA_GEN_NO_VALIDATE: Skip validation by default (true/false)
+      SAIDATA_GEN_FORMAT: Default output format (yaml/json)
+      SAIDATA_GEN_CONFIDENCE_THRESHOLD: Default confidence threshold (0.0-1.0)
     
     Examples:
     
@@ -222,22 +247,62 @@ def generate(ctx, software_name, providers, use_rag, rag_provider, no_validate, 
       saidata-gen generate nginx --providers apt,brew,docker
       
       # Generate with AI enhancement
-      saidata-gen generate nginx --use-rag --rag-provider openai
+      saidata-gen generate nginx --ai --ai-provider openai
+      
+      # Generate with AI using Anthropic
+      saidata-gen generate nginx --ai --ai-provider anthropic
+      
+      # Generate with local AI model
+      saidata-gen generate nginx --ai --ai-provider local
       
       # Save to specific file
       saidata-gen generate nginx --output nginx.yaml
       
-      # Generate as JSON
-      saidata-gen generate nginx --format json
+      # Generate as JSON with AI enhancement
+      saidata-gen generate nginx --format json --ai
+      
+      # Generate directory structure with provider overrides
+      saidata-gen generate nginx --directory-structure
+      
+      # Generate directory structure in specific location
+      saidata-gen generate nginx --directory-structure --output ./generated/
+      
+      # Generate comprehensive metadata file with all provider info
+      saidata-gen generate nginx --comprehensive
+      
+      # Generate comprehensive file with specific name
+      saidata-gen generate nginx --comprehensive --output nginx_full.yaml
+      
+      # Use environment variables
+      export SAIDATA_GEN_AI=true
+      export SAIDATA_GEN_AI_PROVIDER=anthropic
+      saidata-gen generate nginx
     """
     try:
         # Apply environment variable defaults only if not provided via CLI
         if not providers and os.getenv('SAIDATA_GEN_PROVIDERS'):
             providers = os.getenv('SAIDATA_GEN_PROVIDERS')
+        
+        # Handle AI enhancement options with environment variables
+        if not ai and os.getenv('SAIDATA_GEN_AI', '').lower() in ['true', '1', 'yes']:
+            ai = True
+        if ai_provider == 'openai' and os.getenv('SAIDATA_GEN_AI_PROVIDER'):
+            ai_provider = os.getenv('SAIDATA_GEN_AI_PROVIDER')
+        
+        # Backward compatibility: handle deprecated RAG options
         if not use_rag and os.getenv('SAIDATA_GEN_USE_RAG', '').lower() in ['true', '1', 'yes']:
             use_rag = True
         if rag_provider == 'openai' and os.getenv('SAIDATA_GEN_RAG_PROVIDER'):
             rag_provider = os.getenv('SAIDATA_GEN_RAG_PROVIDER')
+        
+        # If deprecated RAG options are used, map them to new AI options
+        if use_rag and not ai:
+            ai = True
+            console.print("[yellow]Warning: --use-rag is deprecated, use --ai instead[/yellow]")
+        if use_rag and ai_provider == 'openai' and rag_provider != 'openai':
+            ai_provider = rag_provider
+            console.print("[yellow]Warning: --rag-provider is deprecated, use --ai-provider instead[/yellow]")
+        
         # Use Click context to check if format was provided explicitly
         if ctx.get_parameter_source('format') == click.core.ParameterSource.DEFAULT and os.getenv('SAIDATA_GEN_FORMAT'):
             format = os.getenv('SAIDATA_GEN_FORMAT')
@@ -246,6 +311,34 @@ def generate(ctx, software_name, providers, use_rag, rag_provider, no_validate, 
         if confidence_threshold == 0.7 and os.getenv('SAIDATA_GEN_CONFIDENCE_THRESHOLD'):
             confidence_threshold = float(os.getenv('SAIDATA_GEN_CONFIDENCE_THRESHOLD'))
         
+        engine = SaidataEngine(config_path=ctx.obj['config'])
+        
+        # Determine provider list - validate if specified, discover if not
+        if providers:
+            provider_list = providers.split(',')
+            console.print(f"Validating {len(provider_list)} specified providers...")
+            available_providers = engine.get_available_providers()
+            invalid_providers = []
+            
+            for provider in provider_list:
+                if provider not in available_providers:
+                    invalid_providers.append(provider)
+                elif not available_providers[provider].get('has_template', False):
+                    console.print(f"[yellow]Warning:[/yellow] Provider '{provider}' has no template available")
+            
+            if invalid_providers:
+                console.print(f"[red]Error:[/red] Invalid providers specified: {', '.join(invalid_providers)}")
+                console.print("Use 'saidata-gen list-providers' to see available providers")
+                sys.exit(1)
+            
+            console.print(f"✓ All {len(provider_list)} providers are valid")
+        else:
+            # Auto-discover available providers
+            provider_list = engine.get_default_providers()
+            console.print(f"Auto-discovered {len(provider_list)} available providers")
+            if ctx.obj['verbose']:
+                console.print(f"Using providers: {', '.join(provider_list)}")
+        
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -253,41 +346,93 @@ def generate(ctx, software_name, providers, use_rag, rag_provider, no_validate, 
         ) as progress:
             task = progress.add_task(f"Generating metadata for {software_name}...", total=None)
             
-            engine = SaidataEngine(config_path=ctx.obj['config'])
-            
             options = GenerationOptions(
-                providers=providers.split(',') if providers else [],
-                use_rag=use_rag,
-                rag_provider=rag_provider,
+                providers=provider_list,
+                use_rag=ai,  # Map new AI flag to use_rag for backward compatibility
+                rag_provider=ai_provider,  # Map new AI provider to rag_provider
                 validate_schema=not no_validate,
                 output_format=format,
                 confidence_threshold=confidence_threshold
             )
             
-            result = engine.generate_metadata(software_name, options)
-            progress.update(task, completed=True)
-        
-        # Handle output
-        if output:
-            output_path = Path(output)
-            save_metadata_to_file(result.metadata, output_path, format)
-            console.print(f"✅ Metadata generated and saved to: [cyan]{output_path}[/cyan]")
-        else:
-            # Display to stdout with syntax highlighting
-            content = format_metadata_output(result.metadata, format)
-            syntax = Syntax(content, format, theme="monokai", line_numbers=True)
-            console.print(Panel(syntax, title=f"Generated Metadata for {software_name}", border_style="green"))
-        
-        # Display validation result if validation was performed
-        if result.validation_result and not no_validate:
-            display_validation_result(result.validation_result, output or f"{software_name}.{format}")
-        
-        # Display confidence scores if available
-        if result.confidence_scores:
-            console.print("\n[bold]Confidence Scores:[/bold]")
-            for field, score in result.confidence_scores.items():
-                color = "green" if score >= 0.8 else "yellow" if score >= 0.6 else "red"
-                console.print(f"  {field}: [{color}]{score:.2f}[/{color}]")
+            if directory_structure:
+                # Generate directory structure
+                output_dir = output or str(Path.cwd())
+                result = engine.generate_metadata_with_directory_structure(software_name, output_dir, options)
+                progress.update(task, completed=True)
+                
+                # Display results
+                console.print(f"✅ Directory structure generated at: [cyan]{result['software_dir']}[/cyan]")
+                console.print(f"   📄 Defaults file: [green]{result['defaults_file']}[/green]")
+                
+                if result['provider_files']:
+                    console.print(f"   📁 Provider files ({len(result['provider_files'])}):")
+                    for provider, file_path in result['provider_files'].items():
+                        console.print(f"      - {provider}: [blue]{file_path}[/blue]")
+                else:
+                    console.print("   📁 No provider override files generated")
+                
+                if result.get('skipped_providers'):
+                    console.print(f"   ⏭️  Skipped providers ({len(result['skipped_providers'])}):")
+                    for provider, reason in result['skipped_providers'].items():
+                        console.print(f"      - {provider}: [yellow]{reason}[/yellow]")
+                
+                # Display validation result if validation was performed
+                if result.get('validation_result') and not no_validate:
+                    display_validation_result(result['validation_result'], result['defaults_file'])
+                
+                # Display confidence scores if available
+                if result.get('confidence_scores'):
+                    console.print("\n[bold]Confidence Scores:[/bold]")
+                    for field, score in result['confidence_scores'].items():
+                        color = "green" if score >= 0.8 else "yellow" if score >= 0.6 else "red"
+                        console.print(f"  {field}: [{color}]{score:.2f}[/{color}]")
+            elif comprehensive:
+                # Generate comprehensive metadata file
+                output_path = output or f"{software_name}_comprehensive.yaml"
+                result = engine.generate_comprehensive_metadata_file(software_name, output_path, options)
+                progress.update(task, completed=True)
+                
+                # Display results
+                console.print(f"✅ Comprehensive metadata generated: [cyan]{result['comprehensive_file']}[/cyan]")
+                console.print(f"   📊 Providers processed: [green]{result['provider_count']}[/green]")
+                
+                # Display validation result if validation was performed
+                if result.get('validation_result') and not no_validate:
+                    display_validation_result(result['validation_result'], result['comprehensive_file'])
+                
+                # Display confidence scores if available
+                if result.get('confidence_scores'):
+                    console.print("\n[bold]Confidence Scores:[/bold]")
+                    for field, score in result['confidence_scores'].items():
+                        color = "green" if score >= 0.8 else "yellow" if score >= 0.6 else "red"
+                        console.print(f"  {field}: [{color}]{score:.2f}[/{color}]")
+            else:
+                # Generate single metadata file (existing behavior)
+                result = engine.generate_metadata(software_name, options)
+                progress.update(task, completed=True)
+                
+                # Handle output
+                if output:
+                    output_path = Path(output)
+                    save_metadata_to_file(result.metadata, output_path, format)
+                    console.print(f"✅ Metadata generated and saved to: [cyan]{output_path}[/cyan]")
+                else:
+                    # Display to stdout with syntax highlighting
+                    content = format_metadata_output(result.metadata, format)
+                    syntax = Syntax(content, format, theme="monokai", line_numbers=True)
+                    console.print(Panel(syntax, title=f"Generated Metadata for {software_name}", border_style="green"))
+                
+                # Display validation result if validation was performed
+                if result.validation_result and not no_validate:
+                    display_validation_result(result.validation_result, output or f"{software_name}.{format}")
+                
+                # Display confidence scores if available
+                if result.confidence_scores:
+                    console.print("\n[bold]Confidence Scores:[/bold]")
+                    for field, score in result.confidence_scores.items():
+                        color = "green" if score >= 0.8 else "yellow" if score >= 0.6 else "red"
+                        console.print(f"  {field}: [{color}]{score:.2f}[/{color}]")
         
     except SaidataGenError as e:
         console.print(f"[red]Error:[/red] {e}")
@@ -334,6 +479,95 @@ def validate(ctx, file_path, detailed):
                     console.print(f"   Schema path: {issue.schema_path}")
         
         sys.exit(0 if result.valid else 1)
+        
+    except SaidataGenError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"[red]Unexpected error:[/red] {e}")
+        if ctx.obj['verbose']:
+            console.print_exception()
+        sys.exit(1)
+
+
+@cli.command()
+@click.argument('directory_path', type=click.Path(exists=True))
+@click.option('--cleanup', is_flag=True, help='Remove empty or redundant provider files')
+@click.option('--format', 'format_files', is_flag=True, help='Ensure formatting consistency')
+@click.option('--detailed', '-d', is_flag=True, help='Show detailed validation information')
+@click.pass_context
+def validate_structure(ctx, directory_path, cleanup, format_files, detailed):
+    """
+    Validate a generated directory structure.
+    
+    This command validates directory structures created with --directory-structure
+    and optionally performs cleanup and formatting operations.
+    
+    Examples:
+    
+      # Basic validation
+      saidata-gen validate-structure nginx/
+      
+      # Validate with cleanup and formatting
+      saidata-gen validate-structure nginx/ --cleanup --format
+      
+      # Detailed validation output
+      saidata-gen validate-structure nginx/ --detailed
+    """
+    try:
+        engine = SaidataEngine(config_path=ctx.obj['config'])
+        result = engine.validate_and_cleanup_directory_structure(
+            directory_path, 
+            cleanup=cleanup, 
+            format_files=format_files
+        )
+        
+        # Display validation results
+        validation = result["validation"]
+        if validation["valid"]:
+            console.print(f"✅ [green]Directory structure is valid[/green]: {directory_path}")
+        else:
+            console.print(f"❌ [red]Directory structure has issues[/red]: {directory_path}")
+        
+        if validation["issues"]:
+            console.print("\n[red]Issues found:[/red]")
+            for issue in validation["issues"]:
+                console.print(f"  • {issue}")
+        
+        if validation["warnings"]:
+            console.print("\n[yellow]Warnings:[/yellow]")
+            for warning in validation["warnings"]:
+                console.print(f"  • {warning}")
+        
+        # Display cleanup results
+        if cleanup and result["cleanup"]:
+            cleanup_result = result["cleanup"]
+            if cleanup_result["removed_files"]:
+                console.print(f"\n🧹 [blue]Cleanup completed[/blue]: removed {len(cleanup_result['removed_files'])} files")
+                if detailed:
+                    for removed_file in cleanup_result["removed_files"]:
+                        console.print(f"  - Removed: {removed_file}")
+            
+            if cleanup_result["errors"]:
+                console.print("\n[red]Cleanup errors:[/red]")
+                for error in cleanup_result["errors"]:
+                    console.print(f"  • {error}")
+        
+        # Display formatting results
+        if format_files and result["formatting"]:
+            formatting_result = result["formatting"]
+            if formatting_result["formatted_files"]:
+                console.print(f"\n📝 [blue]Formatting completed[/blue]: formatted {len(formatting_result['formatted_files'])} files")
+                if detailed:
+                    for formatted_file in formatting_result["formatted_files"]:
+                        console.print(f"  - Formatted: {formatted_file}")
+            
+            if formatting_result["errors"]:
+                console.print("\n[red]Formatting errors:[/red]")
+                for error in formatting_result["errors"]:
+                    console.print(f"  • {error}")
+        
+        sys.exit(0 if validation["valid"] else 1)
         
     except SaidataGenError as e:
         console.print(f"[red]Error:[/red] {e}")
@@ -411,11 +645,15 @@ def search(ctx, query, providers, limit, min_score):
 @click.option('--providers', '-p', 
               default=lambda: os.getenv('SAIDATA_GEN_PROVIDERS'),
               help='Comma-separated list of providers to use (env: SAIDATA_GEN_PROVIDERS)')
+@click.option('--ai', is_flag=True, 
+              help='Enable AI enhancement for metadata generation (env: SAIDATA_GEN_AI)')
+@click.option('--ai-provider', default='openai', type=click.Choice(['openai', 'anthropic', 'local']),
+              help='AI provider to use for enhancement (env: SAIDATA_GEN_AI_PROVIDER)')
 @click.option('--use-rag', is_flag=True, 
               default=lambda: os.getenv('SAIDATA_GEN_USE_RAG', '').lower() in ['true', '1', 'yes'],
-              help='Use RAG for enhanced generation (env: SAIDATA_GEN_USE_RAG)')
+              help='Use RAG for enhanced generation (deprecated: use --ai) (env: SAIDATA_GEN_USE_RAG)')
 @click.option('--rag-provider', default='openai', type=click.Choice(['openai', 'anthropic', 'local']),
-              help='RAG provider to use (env: SAIDATA_GEN_RAG_PROVIDER)')
+              help='RAG provider to use (deprecated: use --ai-provider) (env: SAIDATA_GEN_RAG_PROVIDER)')
 @click.option('--no-validate', is_flag=True, 
               default=lambda: os.getenv('SAIDATA_GEN_NO_VALIDATE', '').lower() in ['true', '1', 'yes'],
               help='Skip schema validation (env: SAIDATA_GEN_NO_VALIDATE)')
@@ -432,7 +670,7 @@ def search(ctx, query, providers, limit, min_score):
 @click.option('--dry-run', is_flag=True, help='Show what would be processed without actually doing it')
 @click.option('--show-details', is_flag=True, help='Show detailed results including successful packages')
 @click.pass_context
-def batch(ctx, input, output, providers, use_rag, rag_provider, no_validate, format, max_concurrent, 
+def batch(ctx, input, output, providers, ai, ai_provider, use_rag, rag_provider, no_validate, format, max_concurrent, 
           continue_on_error, progress_format, fail_fast, dry_run, show_details):
     """
     Process multiple software packages in batch.
@@ -440,11 +678,17 @@ def batch(ctx, input, output, providers, use_rag, rag_provider, no_validate, for
     This command processes a list of software packages from a file and generates
     metadata for each one. It supports parallel processing and detailed progress reporting.
     
+    AI Enhancement:
+      The --ai flag enables AI-powered metadata enhancement for all packages in the batch.
+      This can significantly improve metadata quality but may increase processing time.
+    
     Environment Variables:
       SAIDATA_GEN_BATCH_INPUT: Default input file path
       SAIDATA_GEN_BATCH_OUTPUT: Default output directory
       SAIDATA_GEN_PROVIDERS: Default providers list
-      SAIDATA_GEN_USE_RAG: Enable RAG by default (true/false)
+      SAIDATA_GEN_AI: Enable AI enhancement by default (true/false)
+      SAIDATA_GEN_AI_PROVIDER: Default AI provider (openai/anthropic/local)
+      SAIDATA_GEN_USE_RAG: Enable RAG by default (deprecated: use SAIDATA_GEN_AI)
       SAIDATA_GEN_MAX_CONCURRENT: Default concurrency level
       SAIDATA_GEN_PROGRESS_FORMAT: Progress format (rich/simple/json)
     
@@ -456,8 +700,11 @@ def batch(ctx, input, output, providers, use_rag, rag_provider, no_validate, for
       # Save to specific directory
       saidata-gen batch --input software_list.txt --output ./generated/
       
-      # Use specific providers with RAG
-      saidata-gen batch --input software_list.txt --providers apt,brew --use-rag
+      # Use specific providers with AI enhancement
+      saidata-gen batch --input software_list.txt --providers apt,brew --ai
+      
+      # Use AI with specific provider
+      saidata-gen batch --input software_list.txt --ai --ai-provider anthropic
       
       # Process with custom concurrency
       saidata-gen batch --input software_list.txt --max-concurrent 10
@@ -482,8 +729,25 @@ def batch(ctx, input, output, providers, use_rag, rag_provider, no_validate, for
             output = os.getenv('SAIDATA_GEN_BATCH_OUTPUT')
         if not providers and os.getenv('SAIDATA_GEN_PROVIDERS'):
             providers = os.getenv('SAIDATA_GEN_PROVIDERS')
+        
+        # Handle AI enhancement options with environment variables
+        if not ai and os.getenv('SAIDATA_GEN_AI', '').lower() in ['true', '1', 'yes']:
+            ai = True
+        if ai_provider == 'openai' and os.getenv('SAIDATA_GEN_AI_PROVIDER'):
+            ai_provider = os.getenv('SAIDATA_GEN_AI_PROVIDER')
+        
+        # Backward compatibility: handle deprecated RAG options
         if os.getenv('SAIDATA_GEN_RAG_PROVIDER'):
             rag_provider = os.getenv('SAIDATA_GEN_RAG_PROVIDER')
+        
+        # If deprecated RAG options are used, map them to new AI options
+        if use_rag and not ai:
+            ai = True
+            console.print("[yellow]Warning: --use-rag is deprecated, use --ai instead[/yellow]")
+        if use_rag and ai_provider == 'openai' and rag_provider != 'openai':
+            ai_provider = rag_provider
+            console.print("[yellow]Warning: --rag-provider is deprecated, use --ai-provider instead[/yellow]")
+        
         if os.getenv('SAIDATA_GEN_FORMAT'):
             format = os.getenv('SAIDATA_GEN_FORMAT')
         if os.getenv('SAIDATA_GEN_MAX_CONCURRENT'):
@@ -531,11 +795,40 @@ def batch(ctx, input, output, providers, use_rag, rag_provider, no_validate, for
         
         engine = SaidataEngine(config_path=ctx.obj['config'])
         
+        # Determine provider list - validate if specified, discover if not
+        if providers:
+            provider_list = providers.split(',')
+            if progress_format != 'json':
+                console.print(f"Validating {len(provider_list)} specified providers...")
+            available_providers = engine.get_available_providers()
+            invalid_providers = []
+            
+            for provider in provider_list:
+                if provider not in available_providers:
+                    invalid_providers.append(provider)
+                elif not available_providers[provider].get('has_template', False):
+                    if progress_format != 'json':
+                        console.print(f"[yellow]Warning:[/yellow] Provider '{provider}' has no template available")
+            
+            if invalid_providers:
+                if progress_format != 'json':
+                    console.print(f"[red]Error:[/red] Invalid providers specified: {', '.join(invalid_providers)}")
+                    console.print("Use 'saidata-gen list-providers' to see available providers")
+                sys.exit(1)
+            
+            if progress_format != 'json':
+                console.print(f"✓ All {len(provider_list)} providers are valid")
+        else:
+            # Auto-discover available providers
+            provider_list = engine.get_default_providers()
+            if progress_format != 'json':
+                console.print(f"Auto-discovered {len(provider_list)} available providers")
+        
         options = BatchOptions(
             output_dir=str(output_dir),
-            providers=providers.split(',') if providers else [],
-            use_rag=use_rag,
-            rag_provider=rag_provider,
+            providers=provider_list,
+            use_rag=ai,  # Map new AI flag to use_rag for backward compatibility
+            rag_provider=ai_provider,  # Map new AI provider to rag_provider
             validate_schema=not no_validate,
             output_format=format,
             max_concurrent=max_concurrent,
@@ -608,6 +901,89 @@ def batch(ctx, input, output, providers, use_rag, rag_provider, no_validate, for
             else:
                 if progress_format != 'json':
                     console.print(f"[yellow]Warning: {failed_count} packages failed but continuing due to --continue-on-error[/yellow]")
+        
+    except SaidataGenError as e:
+        console.print(f"[red]Error:[/red] {e}")
+        sys.exit(1)
+    except Exception as e:
+        console.print(f"[red]Unexpected error:[/red] {e}")
+        if ctx.obj['verbose']:
+            console.print_exception()
+        sys.exit(1)
+
+
+@cli.command()
+@click.option('--show-templates', is_flag=True, help='Show which providers have templates available')
+@click.option('--show-fetchers', is_flag=True, help='Show which providers have fetchers available')
+@click.option('--format', '-f', default='table', type=click.Choice(['table', 'list', 'json']), 
+              help='Output format')
+@click.pass_context
+def list_providers(ctx, show_templates, show_fetchers, format):
+    """
+    List all available providers.
+    
+    This command shows all available package managers and providers that
+    saidata-gen can work with, including their status and capabilities.
+    
+    Examples:
+    
+      # List all providers
+      saidata-gen list-providers
+      
+      # Show template availability
+      saidata-gen list-providers --show-templates
+      
+      # Show fetcher availability
+      saidata-gen list-providers --show-fetchers
+      
+      # Output as JSON
+      saidata-gen list-providers --format json
+    """
+    try:
+        engine = SaidataEngine(config_path=ctx.obj['config'])
+        provider_info = engine.get_available_providers()
+        
+        if format == 'json':
+            import json
+            print(json.dumps(provider_info, indent=2))
+            return
+        
+        if format == 'list':
+            for provider in sorted(provider_info.keys()):
+                console.print(provider)
+            return
+        
+        # Table format (default)
+        table = Table(title="Available Providers")
+        table.add_column("Provider", style="cyan", no_wrap=True)
+        table.add_column("Type", style="magenta")
+        
+        if show_templates:
+            table.add_column("Template", style="green")
+        if show_fetchers:
+            table.add_column("Fetcher", style="blue")
+        
+        table.add_column("Description", style="white")
+        
+        for provider, info in sorted(provider_info.items()):
+            row = [
+                provider,
+                info.get('type', 'Unknown')
+            ]
+            
+            if show_templates:
+                has_template = "✅" if info.get('has_template', False) else "❌"
+                row.append(has_template)
+            
+            if show_fetchers:
+                has_fetcher = "✅" if info.get('has_fetcher', False) else "❌"
+                row.append(has_fetcher)
+            
+            row.append(info.get('description', 'No description available'))
+            
+            table.add_row(*row)
+        
+        console.print(table)
         
     except SaidataGenError as e:
         console.print(f"[red]Error:[/red] {e}")

@@ -21,9 +21,12 @@ mkdir -p "$OUTPUT_DIR"
 
 # Step 1: Generate metadata
 echo "Step 1: Generating metadata for $SOFTWARE_NAME..."
+# Use comprehensive provider list covering all major package managers
+PROVIDERS="apt,brew,yum,dnf,zypper,pacman,apk,snap,flatpak,winget,choco,scoop,npm,pypi,cargo,gem,composer,nuget,maven,gradle,go,docker,helm,nix,nixpkgs,guix,spack,portage,emerge,xbps,slackpkg,opkg,pkg"
+
 saidata-gen --config "$CONFIG_FILE" generate "$SOFTWARE_NAME" \
     --output "$OUTPUT_DIR/${SOFTWARE_NAME}.yaml" \
-    --providers apt,brew,pypi,npm
+    --providers "$PROVIDERS"
 
 if [ $? -eq 0 ]; then
     echo "✓ Metadata generation completed successfully"

@@ -11,6 +11,10 @@ from saidata_gen.validation.quality import (
     QualityAssessment, QualityReport, FieldQuality, SourceAttribution,
     CrossReferenceResult
 )
+from saidata_gen.validation.config_validator import (
+    ConfigurationValidator, ConfigurationSuggestion, ProviderOverrideValidationResult,
+    ConfigurationValidationReport
+)
 
 __all__ = [
     "SchemaValidator",
@@ -18,5 +22,9 @@ __all__ = [
     "QualityReport",
     "FieldQuality",
     "SourceAttribution",
-    "CrossReferenceResult"
+    "CrossReferenceResult",
+    "ConfigurationValidator",
+    "ConfigurationSuggestion",
+    "ProviderOverrideValidationResult",
+    "ConfigurationValidationReport"
 ]

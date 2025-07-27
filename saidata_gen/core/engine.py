@@ -8,7 +8,7 @@ and provides the main API.
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from saidata_gen.core.interfaces import (
     BatchOptions,
@@ -88,7 +88,7 @@ class SaidataEngine:
         logger.info(f"Generating metadata for {software_name}")
         
         # Determine which providers to use
-        providers = options.providers if options.providers else ["apt", "brew", "dnf", "npm", "pypi", "docker"]
+        providers = options.providers if options.providers else self.get_default_providers()
         
         # Collect package information from all providers
         package_sources = []
@@ -131,6 +131,189 @@ class SaidataEngine:
         
         logger.info(f"Generated metadata for {software_name} with {len(package_sources)} sources")
         return result
+    
+    def generate_metadata_with_directory_structure(
+        self, 
+        software_name: str, 
+        output_dir: str,
+        options: GenerationOptions
+    ) -> Dict[str, Any]:
+        """
+        Generate metadata with software-specific directory structure.
+        
+        This method creates a directory structure following the pattern:
+        <software_name>/
+        ├── defaults.yaml (merged defaults + provider data + AI enhancements)
+        └── providers/
+            ├── apt.yaml (provider-specific overrides only)
+            ├── brew.yaml (provider-specific overrides only)
+            └── ... (other providers)
+        
+        Args:
+            software_name: Name of the software package
+            output_dir: Directory where to create the software directory
+            options: Options for metadata generation
+            
+        Returns:
+            Dictionary with information about generated files and validation results
+        """
+        logger.info(f"Generating directory structure for {software_name}")
+        
+        # Determine which providers to use
+        providers = options.providers if options.providers else self.get_default_providers()
+        
+        # Collect package information from all providers
+        package_sources = []
+        for provider in providers:
+            try:
+                fetcher = fetcher_factory.create_fetcher(provider, self.fetcher_config)
+                if fetcher:
+                    logger.debug(f"Searching for {software_name} in {provider}")
+                    packages = fetcher.search_packages(software_name)
+                    if packages:
+                        # Take the first (best) match
+                        package_info = packages[0]
+                        package_sources.append(package_info)
+                        logger.debug(f"Found {software_name} in {provider}: {package_info.name}")
+                    else:
+                        logger.debug(f"No packages found for {software_name} in {provider}")
+                else:
+                    logger.warning(f"Could not create fetcher for provider: {provider}")
+            except Exception as e:
+                logger.warning(f"Error fetching from {provider}: {e}")
+                continue
+        
+        if not package_sources:
+            logger.warning(f"No package information found for {software_name}")
+            # Create a minimal package info for template generation
+            package_sources = [PackageInfo(
+                name=software_name,
+                version="latest",
+                description=f"Software package: {software_name}",
+                provider="default",
+                details={}
+            )]
+        
+        # Generate directory structure using the metadata generator
+        ai_provider = getattr(options, 'rag_provider', None) if getattr(options, 'use_rag', False) else None
+        
+        result = self.metadata_generator.generate_software_directory_structure(
+            software_name=software_name,
+            sources=package_sources,
+            output_dir=output_dir,
+            providers=providers,
+            ai_provider=ai_provider
+        )
+        
+        logger.info(f"Generated directory structure for {software_name} with {len(result['provider_files'])} provider files")
+        return result
+    
+    def generate_comprehensive_metadata_file(
+        self,
+        software_name: str,
+        output_path: str,
+        options: GenerationOptions
+    ) -> Dict[str, Any]:
+        """
+        Generate comprehensive metadata file with all provider information merged.
+        
+        Args:
+            software_name: Name of the software package
+            output_path: Path where to create the comprehensive metadata file
+            options: Options for metadata generation
+            
+        Returns:
+            Dictionary with information about the generated file
+        """
+        logger.info(f"Generating comprehensive metadata file for {software_name}")
+        
+        # Determine which providers to use
+        providers = options.providers if options.providers else self.get_default_providers()
+        
+        # Collect package information from all providers
+        package_sources = []
+        for provider in providers:
+            try:
+                fetcher = fetcher_factory.create_fetcher(provider, self.fetcher_config)
+                if fetcher:
+                    logger.debug(f"Searching for {software_name} in {provider}")
+                    packages = fetcher.search_packages(software_name)
+                    if packages:
+                        # Take the first (best) match
+                        package_info = packages[0]
+                        package_sources.append(package_info)
+                        logger.debug(f"Found {software_name} in {provider}: {package_info.name}")
+                    else:
+                        logger.debug(f"No packages found for {software_name} in {provider}")
+                else:
+                    logger.warning(f"Could not create fetcher for provider: {provider}")
+            except Exception as e:
+                logger.warning(f"Error fetching from {provider}: {e}")
+                continue
+        
+        if not package_sources:
+            logger.warning(f"No package information found for {software_name}")
+            # Create a minimal package info for template generation
+            package_sources = [PackageInfo(
+                name=software_name,
+                version="latest",
+                description=f"Software package: {software_name}",
+                provider="default",
+                details={}
+            )]
+        
+        # Generate comprehensive metadata file using the metadata generator
+        ai_provider = getattr(options, 'rag_provider', None) if getattr(options, 'use_rag', False) else None
+        
+        result = self.metadata_generator.create_comprehensive_metadata_file(
+            software_name=software_name,
+            sources=package_sources,
+            output_path=output_path,
+            providers=providers,
+            ai_provider=ai_provider
+        )
+        
+        logger.info(f"Generated comprehensive metadata file for {software_name}")
+        return result
+    
+    def validate_and_cleanup_directory_structure(
+        self,
+        software_dir: str,
+        cleanup: bool = True,
+        format_files: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Validate and optionally cleanup/format a generated directory structure.
+        
+        Args:
+            software_dir: Path to the software directory to validate
+            cleanup: Whether to perform cleanup of empty/redundant files
+            format_files: Whether to ensure formatting consistency
+            
+        Returns:
+            Dictionary with validation, cleanup, and formatting results
+        """
+        logger.info(f"Validating and cleaning up directory structure: {software_dir}")
+        
+        result = {
+            "validation": {},
+            "cleanup": {},
+            "formatting": {}
+        }
+        
+        # Validate directory structure
+        result["validation"] = self.metadata_generator.validate_generated_directory_structure(software_dir)
+        
+        # Cleanup if requested and validation passed
+        if cleanup and result["validation"]["valid"]:
+            result["cleanup"] = self.metadata_generator.cleanup_generated_files(software_dir)
+        
+        # Format files if requested
+        if format_files:
+            result["formatting"] = self.metadata_generator.ensure_formatting_consistency(software_dir)
+        
+        logger.info(f"Directory structure processing completed for {software_dir}")
+        return result
 
     def validate_metadata(self, file_path: str) -> ValidationResult:
         """
@@ -172,6 +355,7 @@ class SaidataEngine:
         results = {}
         successful = 0
         failed = 0
+        errors = []
         
         for software_name in software_list:
             try:
@@ -190,11 +374,18 @@ class SaidataEngine:
                     logger.debug(f"Successfully processed {software_name}")
                 else:
                     failed += 1
-                    logger.warning(f"Generated metadata for {software_name} has validation issues")
+                    error_msg = f"Generated metadata for {software_name} has validation issues"
+                    logger.warning(error_msg)
+                    if result.error_message:
+                        errors.append(f"{software_name}: {result.error_message}")
+                    else:
+                        errors.append(f"{software_name}: validation failed")
                     
             except Exception as e:
                 failed += 1
-                logger.error(f"Failed to process {software_name}: {e}")
+                error_msg = f"Failed to process {software_name}: {e}"
+                logger.error(error_msg)
+                errors.append(error_msg)
                 results[software_name] = None
         
         logger.info(f"Batch processing completed: {successful} successful, {failed} failed")
@@ -205,7 +396,11 @@ class SaidataEngine:
                 "total": len(software_list),
                 "successful": successful,
                 "failed": failed
-            }
+            },
+            total_processed=len(software_list),
+            successful=successful,
+            failed=failed,
+            errors=errors
         )
 
     def search_software(self, query: str) -> List[SoftwareMatch]:
@@ -272,3 +467,142 @@ class SaidataEngine:
                 "failed": failed
             }
         )
+
+    def get_available_providers(self) -> Dict[str, Dict[str, any]]:
+        """
+        Get information about all available providers.
+
+        Returns:
+            Dict[str, Dict[str, any]]: Dictionary mapping provider names to their information.
+        """
+        logger.debug("Getting available providers information")
+        
+        # Get registered fetchers from factory
+        registered_fetchers = fetcher_factory.get_registered_fetchers()
+        
+        # Check for available templates
+        from pathlib import Path
+        templates_dir = Path(__file__).parent.parent / "templates" / "providers"
+        available_templates = set()
+        
+        if templates_dir.exists():
+            for template_file in templates_dir.glob("*.yaml"):
+                available_templates.add(template_file.stem)
+            
+            # Also check for hierarchical templates (directories)
+            for template_dir in templates_dir.iterdir():
+                if template_dir.is_dir():
+                    available_templates.add(template_dir.name)
+        
+        # Provider type mapping
+        provider_types = {
+            'apt': 'Linux Package Manager',
+            'brew': 'macOS/Linux Package Manager', 
+            'dnf': 'Linux Package Manager (RPM)',
+            'yum': 'Linux Package Manager (RPM)',
+            'zypper': 'Linux Package Manager (RPM)',
+            'pacman': 'Linux Package Manager (Arch)',
+            'apk': 'Linux Package Manager (Alpine)',
+            'snap': 'Universal Package Manager',
+            'flatpak': 'Universal Package Manager',
+            'winget': 'Windows Package Manager',
+            'choco': 'Windows Package Manager',
+            'scoop': 'Windows Package Manager',
+            'npm': 'JavaScript Package Manager',
+            'pypi': 'Python Package Manager',
+            'cargo': 'Rust Package Manager',
+            'gem': 'Ruby Package Manager',
+            'composer': 'PHP Package Manager',
+            'nuget': '.NET Package Manager',
+            'maven': 'Java Package Manager',
+            'gradle': 'Java Build Tool',
+            'go': 'Go Module Manager',
+            'docker': 'Container Registry',
+            'helm': 'Kubernetes Package Manager',
+            'nix': 'Nix Package Manager',
+            'nixpkgs': 'Nix Package Collection',
+            'guix': 'GNU Guix Package Manager',
+            'spack': 'HPC Package Manager',
+            'portage': 'Gentoo Package Manager',
+            'emerge': 'Gentoo Package Manager',
+            'xbps': 'Void Linux Package Manager',
+            'slackpkg': 'Slackware Package Manager',
+            'opkg': 'Embedded Linux Package Manager',
+            'pkg': 'FreeBSD Package Manager'
+        }
+        
+        # Provider descriptions
+        provider_descriptions = {
+            'apt': 'Debian/Ubuntu APT package manager',
+            'brew': 'Homebrew package manager for macOS and Linux',
+            'dnf': 'DNF package manager for Fedora/RHEL 8+',
+            'yum': 'YUM package manager for RHEL/CentOS 7 and earlier',
+            'zypper': 'Zypper package manager for openSUSE/SLES',
+            'pacman': 'Pacman package manager for Arch Linux',
+            'apk': 'APK package manager for Alpine Linux',
+            'snap': 'Snap universal package manager',
+            'flatpak': 'Flatpak universal application distribution',
+            'winget': 'Windows Package Manager',
+            'choco': 'Chocolatey package manager for Windows',
+            'scoop': 'Scoop command-line installer for Windows',
+            'npm': 'Node.js package manager',
+            'pypi': 'Python Package Index',
+            'cargo': 'Rust package manager and build system',
+            'gem': 'Ruby package manager',
+            'composer': 'PHP dependency manager',
+            'nuget': '.NET package manager',
+            'maven': 'Apache Maven build automation tool',
+            'gradle': 'Gradle build automation tool',
+            'go': 'Go module system',
+            'docker': 'Docker container registry',
+            'helm': 'Kubernetes package manager',
+            'nix': 'Nix package manager',
+            'nixpkgs': 'Nix package collection',
+            'guix': 'GNU Guix functional package manager',
+            'spack': 'Package manager for supercomputers',
+            'portage': 'Gentoo Portage package manager',
+            'emerge': 'Gentoo emerge package management tool',
+            'xbps': 'X Binary Package System for Void Linux',
+            'slackpkg': 'Slackware package management tool',
+            'opkg': 'Lightweight package manager for embedded systems',
+            'pkg': 'FreeBSD package manager'
+        }
+        
+        # Combine all known providers
+        all_providers = set(registered_fetchers.keys()) | available_templates
+        
+        provider_info = {}
+        for provider in sorted(all_providers):
+            provider_info[provider] = {
+                'type': provider_types.get(provider, 'Unknown'),
+                'description': provider_descriptions.get(provider, 'No description available'),
+                'has_fetcher': provider in registered_fetchers,
+                'has_template': provider in available_templates
+            }
+        
+        logger.debug(f"Found {len(provider_info)} available providers")
+        return provider_info
+
+    def get_default_providers(self) -> List[str]:
+        """
+        Get list of default providers that should be used when none are specified.
+        
+        Returns:
+            List[str]: List of default provider names.
+        """
+        available_providers = self.get_available_providers()
+        
+        # Filter to providers that have both fetchers and templates
+        default_providers = []
+        for provider, info in available_providers.items():
+            if info.get('has_fetcher', False) and info.get('has_template', False):
+                default_providers.append(provider)
+        
+        # If no providers have both, fall back to providers with templates only
+        if not default_providers:
+            for provider, info in available_providers.items():
+                if info.get('has_template', False):
+                    default_providers.append(provider)
+        
+        logger.debug(f"Default providers: {default_providers}")
+        return sorted(default_providers)

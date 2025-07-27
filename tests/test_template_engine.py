@@ -140,7 +140,7 @@ class TestTemplateEngine(unittest.TestCase):
                 }
             },
             "$for: platform in platforms": {
-                f"platform_{platform}": {
+                "platform_${platform}": {
                     "supported": True
                 }
             },

@@ -202,11 +202,24 @@ class TestSaidataEngine(unittest.TestCase):
         """Test batch processing with some failures."""
         software_list = ["nginx", "nonexistent", "apache2"]
         
-        # Mock mixed results
+        # Mock mixed results with proper validation_result attributes
         mock_results = [
-            MetadataResult(success=True, software_name="nginx"),
-            MetadataResult(success=False, software_name="nonexistent", error_message="Not found"),
-            MetadataResult(success=True, software_name="apache2")
+            MetadataResult(
+                success=True, 
+                software_name="nginx",
+                validation_result=ValidationResult(valid=True, issues=[], file_path="")
+            ),
+            MetadataResult(
+                success=False, 
+                software_name="nonexistent", 
+                error_message="Not found",
+                validation_result=ValidationResult(valid=False, issues=["Not found"], file_path="")
+            ),
+            MetadataResult(
+                success=True, 
+                software_name="apache2",
+                validation_result=ValidationResult(valid=True, issues=[], file_path="")
+            )
         ]
         
         with patch.object(self.engine, 'generate_metadata', side_effect=mock_results):
