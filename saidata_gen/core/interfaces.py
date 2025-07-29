@@ -125,8 +125,8 @@ class GenerationOptions:
     Options for metadata generation.
     """
     providers: List[str] = field(default_factory=list)
-    use_rag: bool = False
-    rag_provider: str = "openai"
+    use_ai: bool = False
+    ai_provider: str = "openai"
     include_dev_packages: bool = False
     confidence_threshold: float = 0.7
     output_format: str = "yaml"
@@ -140,8 +140,8 @@ class BatchOptions:
     """
     output_dir: str = "."
     providers: List[str] = field(default_factory=list)
-    use_rag: bool = False
-    rag_provider: str = "openai"
+    use_ai: bool = False
+    ai_provider: str = "openai"
     include_dev_packages: bool = False
     confidence_threshold: float = 0.7
     output_format: str = "yaml"

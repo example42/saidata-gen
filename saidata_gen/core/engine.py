@@ -195,7 +195,7 @@ class SaidataEngine:
             )]
         
         # Generate directory structure using the metadata generator
-        ai_provider = getattr(options, 'rag_provider', None) if getattr(options, 'use_rag', False) else None
+        ai_provider = getattr(options, 'ai_provider', None) if getattr(options, 'use_ai', False) else None
         
         result = self.metadata_generator.generate_software_directory_structure(
             software_name=software_name,
@@ -263,7 +263,7 @@ class SaidataEngine:
             )]
         
         # Generate comprehensive metadata file using the metadata generator
-        ai_provider = getattr(options, 'rag_provider', None) if getattr(options, 'use_rag', False) else None
+        ai_provider = getattr(options, 'ai_provider', None) if getattr(options, 'use_ai', False) else None
         
         result = self.metadata_generator.create_comprehensive_metadata_file(
             software_name=software_name,
@@ -362,7 +362,8 @@ class SaidataEngine:
                 # Convert BatchOptions to GenerationOptions
                 gen_options = GenerationOptions(
                     providers=getattr(options, 'providers', []),
-                    use_rag=getattr(options, 'use_rag', False),
+                    use_ai=getattr(options, 'use_ai', False),
+                    ai_provider=getattr(options, 'ai_provider', 'openai'),
                     confidence_threshold=getattr(options, 'confidence_threshold', 0.7)
                 )
                 

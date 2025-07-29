@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "saidata-gen"
-version = "0.1.0"
+version = "0.2.0"
 description = "Standalone saidata YAML generator for software metadata with AI-enhanced capabilities"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -101,7 +101,7 @@ profile = "black"
 line_length = 100
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "0.2.0"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

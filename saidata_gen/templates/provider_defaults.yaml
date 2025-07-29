@@ -1,0 +1,745 @@
+# Provider Defaults Configuration
+# This file contains comprehensive default configurations for all supported package managers and providers.
+# These defaults are used when provider-specific configurations are not overridden in software-specific templates.
+#
+# Structure:
+# - Each provider section contains default values for that provider
+# - Software-specific provider templates only need to override values that differ from these defaults
+# - This eliminates configuration duplication across software packages
+# - Provider names match the directory/file names in the providers/ directory
+#
+# Usage:
+# - The ConfigurationManager loads this file as the base for all provider configurations
+# - Software-specific provider files (e.g., nginx/providers/apt.yaml) override these defaults
+# - If no override exists, these default values are used
+#
+# Maintenance:
+# - When adding new providers, add their default configuration here
+# - Keep configurations consistent across similar providers (e.g., RPM-based systems)
+# - Document any provider-specific requirements or constraints
+
+version: 0.1
+
+# =============================================================================
+# LINUX PACKAGE MANAGERS
+# =============================================================================
+
+# APT (Advanced Package Tool) - Debian, Ubuntu, and derivatives
+apt:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      mode: "0644"
+  files:
+    init:
+      path: "/etc/default/{{ software_name }}"
+  urls:
+    apt: "https://packages.ubuntu.com/search?keywords={{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# DNF (Dandified YUM) - Fedora, RHEL 8+, CentOS 8+
+dnf:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      mode: "0644"
+  urls:
+    dnf: "https://packages.fedoraproject.org/pkgs/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# YUM (Yellowdog Updater Modified) - RHEL 7, CentOS 7, older Red Hat systems
+yum:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      mode: "0644"
+  urls:
+    yum: "https://centos.pkgs.org/7/centos-x86_64/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# Zypper - openSUSE, SUSE Linux Enterprise
+zypper:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      mode: "0644"
+  urls:
+    zypper: "https://software.opensuse.org/package/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# Pacman - Arch Linux, Manjaro
+pacman:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      mode: "0644"
+  files:
+    init:
+      path: "/etc/default/{{ software_name }}"
+  urls:
+    pacman: "https://archlinux.org/packages/?name={{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# APK (Alpine Package Keeper) - Alpine Linux
+apk:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      mode: "0644"
+  files:
+    init:
+      path: "/etc/conf.d/{{ software_name }}"
+  urls:
+    apk: "https://pkgs.alpinelinux.org/packages?name={{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# Emerge/Portage - Gentoo Linux
+emerge:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      mode: "0644"
+  files:
+    init:
+      path: "/etc/conf.d/{{ software_name }}"
+  urls:
+    emerge: "https://packages.gentoo.org/packages/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# Portage - Gentoo Linux (alternative interface to emerge)
+portage:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      mode: "0644"
+  files:
+    init:
+      path: "/etc/conf.d/{{ software_name }}"
+  urls:
+    portage: "https://packages.gentoo.org/packages/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# XBPS - Void Linux
+xbps:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      mode: "0644"
+  urls:
+    xbps: "https://voidlinux.org/packages/?arch=x86_64&q={{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# Slackpkg - Slackware Linux
+slackpkg:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      mode: "0644"
+  urls:
+    slackpkg: "https://packages.slackware.com/?search={{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# OPKG - OpenWrt, embedded systems
+opkg:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      mode: "0644"
+  urls:
+    opkg: "https://openwrt.org/packages/pkgdata/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# =============================================================================
+# BSD PACKAGE MANAGERS
+# =============================================================================
+
+# PKG - FreeBSD, DragonFly BSD
+pkg:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      mode: "0644"
+  urls:
+    pkg: "https://www.freshports.org/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# =============================================================================
+# MACOS PACKAGE MANAGERS
+# =============================================================================
+
+# Homebrew - macOS (and Linux)
+brew:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  urls:
+    brew: "https://brew.sh/formula/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# =============================================================================
+# WINDOWS PACKAGE MANAGERS
+# =============================================================================
+
+# Windows Package Manager (winget) - Windows 10/11
+winget:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  urls:
+    winget: "https://winget.run/pkg/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# Chocolatey - Windows
+choco:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  urls:
+    choco: "https://chocolatey.org/packages/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# Scoop - Windows
+scoop:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  urls:
+    scoop: "https://scoop.sh/#/apps?q={{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# =============================================================================
+# UNIVERSAL/CROSS-PLATFORM PACKAGE MANAGERS
+# =============================================================================
+
+# Flatpak - Universal Linux packages
+flatpak:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.var/app/{{ software_name }}/config"
+      mode: "0755"
+    data:
+      path: "~/.var/app/{{ software_name }}/data"
+      mode: "0755"
+  urls:
+    flatpak: "https://flathub.org/apps/details/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# Snap - Universal Linux packages
+snap:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/snap/{{ software_name }}/current"
+      mode: "0755"
+    data:
+      path: "~/snap/{{ software_name }}/common"
+      mode: "0755"
+  urls:
+    snap: "https://snapcraft.io/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# =============================================================================
+# FUNCTIONAL/DECLARATIVE PACKAGE MANAGERS
+# =============================================================================
+
+# Nix - NixOS and other systems
+nix:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.config/nixpkgs"
+      mode: "0755"
+    data:
+      path: "/nix/store"
+      mode: "0755"
+  files:
+    config:
+      path: "~/.config/nixpkgs/config.nix"
+  urls:
+    nix: "https://search.nixos.org/packages?query={{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# NixPkgs - Nix package collection
+nixpkgs:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.config/nixpkgs"
+      mode: "0755"
+    data:
+      path: "/nix/store"
+      mode: "0755"
+  files:
+    config:
+      path: "~/.config/nixpkgs/config.nix"
+  urls:
+    nixpkgs: "https://search.nixos.org/packages?query={{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# GNU Guix - Functional package manager
+guix:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.config/guix"
+      mode: "0755"
+    data:
+      path: "/gnu/store"
+      mode: "0755"
+  files:
+    config:
+      path: "~/.config/guix/channels.scm"
+  urls:
+    guix: "https://packages.guix.gnu.org/packages/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# =============================================================================
+# SCIENTIFIC/HPC PACKAGE MANAGERS
+# =============================================================================
+
+# Spack - Scientific computing package manager
+spack:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.spack"
+      mode: "0755"
+    data:
+      path: "/opt/spack"
+      mode: "0755"
+  urls:
+    spack: "https://packages.spack.io/package.html?name={{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# =============================================================================
+# LANGUAGE-SPECIFIC PACKAGE MANAGERS
+# =============================================================================
+
+# NPM - Node.js packages
+npm:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.npm"
+      mode: "0755"
+    data:
+      path: "node_modules"
+      mode: "0755"
+  files:
+    config:
+      path: "package.json"
+  urls:
+    npm: "https://www.npmjs.com/package/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ["-g"]
+
+# PyPI - Python packages
+pypi:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.pip"
+      mode: "0755"
+    data:
+      path: "~/.local/lib/python*/site-packages"
+      mode: "0755"
+  files:
+    config:
+      path: "~/.pip/pip.conf"
+  urls:
+    pypi: "https://pypi.org/project/{{ software_name }}/"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ["--user"]
+
+# Cargo - Rust packages
+cargo:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.cargo"
+      mode: "0755"
+    data:
+      path: "~/.cargo/registry"
+      mode: "0755"
+  files:
+    config:
+      path: "~/.cargo/config.toml"
+  urls:
+    cargo: "https://crates.io/crates/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# RubyGems - Ruby packages
+gem:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.gem"
+      mode: "0755"
+    data:
+      path: "~/.gem/ruby"
+      mode: "0755"
+  files:
+    config:
+      path: "~/.gemrc"
+  urls:
+    gem: "https://rubygems.org/gems/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ["--user-install"]
+
+# Go Modules - Go packages
+go:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/go"
+      mode: "0755"
+    data:
+      path: "~/go/pkg/mod"
+      mode: "0755"
+  files:
+    config:
+      path: "go.mod"
+  urls:
+    go: "https://pkg.go.dev/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# Composer - PHP packages
+composer:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.composer"
+      mode: "0755"
+    data:
+      path: "vendor"
+      mode: "0755"
+  files:
+    config:
+      path: "composer.json"
+  urls:
+    composer: "https://packagist.org/packages/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# NuGet - .NET packages
+nuget:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.nuget"
+      mode: "0755"
+    data:
+      path: "packages"
+      mode: "0755"
+  files:
+    config:
+      path: "nuget.config"
+  urls:
+    nuget: "https://www.nuget.org/packages/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# Maven - Java packages
+maven:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.m2"
+      mode: "0755"
+    data:
+      path: "~/.m2/repository"
+      mode: "0755"
+  files:
+    config:
+      path: "pom.xml"
+  urls:
+    maven: "https://search.maven.org/artifact/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# Gradle - Java/Kotlin build tool and package manager
+gradle:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.gradle"
+      mode: "0755"
+    data:
+      path: "~/.gradle/caches"
+      mode: "0755"
+  files:
+    config:
+      path: "build.gradle"
+  urls:
+    gradle: "https://plugins.gradle.org/plugin/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# =============================================================================
+# CONTAINER AND ORCHESTRATION PLATFORMS
+# =============================================================================
+
+# Docker - Container platform
+docker:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.docker"
+      mode: "0755"
+    data:
+      path: "/var/lib/docker"
+      mode: "0755"
+  files:
+    config:
+      path: "Dockerfile"
+  containers:
+    upstream:
+      name: "{{ software_name }}"
+      image: "{{ software_name }}"
+      version: latest
+      network: bridge
+      ports: []
+      volumes: []
+      env: []
+  urls:
+    docker: "https://hub.docker.com/_/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~
+
+# Helm - Kubernetes package manager
+helm:
+  services:
+    default:
+      enabled: true
+      status: enabled
+  directories:
+    config:
+      path: "~/.config/helm"
+      mode: "0755"
+    data:
+      path: "~/.local/share/helm"
+      mode: "0755"
+  files:
+    config:
+      path: "Chart.yaml"
+  charts:
+    upstream:
+      name: "{{ software_name }}"
+      version: latest
+      repository: "https://charts.helm.sh/stable"
+  urls:
+    helm: "https://artifacthub.io/packages/helm/{{ software_name }}"
+  packages:
+    default:
+      name: "{{ software_name }}"
+      version: latest
+      install_options: ~

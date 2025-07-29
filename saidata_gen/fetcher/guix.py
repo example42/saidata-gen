@@ -41,6 +41,19 @@ class GuixFetcher(RepositoryFetcher):
         """
         super().__init__(config)
         
+        # Import error handler and system dependency checker
+        from saidata_gen.fetcher.error_handler import FetcherErrorHandler, ErrorContext
+        from saidata_gen.core.system_dependency_checker import SystemDependencyChecker
+        
+        # Initialize error handler and system dependency checker
+        self.error_handler = FetcherErrorHandler(max_retries=3, base_wait_time=1.0)
+        self.dependency_checker = SystemDependencyChecker()
+        
+        # Check for guix command availability (required for this fetcher)
+        self.guix_available = self.dependency_checker.check_command_availability("guix")
+        if not self.guix_available:
+            self.dependency_checker.log_missing_dependency("guix", "guix")
+        
         # Initialize package cache
         self._package_cache: Dict[str, Dict[str, any]] = {}
     

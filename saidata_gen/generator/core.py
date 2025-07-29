@@ -19,6 +19,7 @@ from saidata_gen.core.interfaces import (
 )
 from saidata_gen.core.models import EnhancedSaidataMetadata
 from saidata_gen.generator.templates import TemplateEngine
+from saidata_gen.generator.configuration import ConfigurationManager
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ class MetadataGenerator:
         self,
         config: Optional[GeneratorConfig] = None,
         template_engine: Optional[TemplateEngine] = None,
+        configuration_manager: Optional[ConfigurationManager] = None,
         schema_validator: Optional[Any] = None,
         schema_path: Optional[str] = None,
         data_aggregator: Optional[DataAggregator] = None,
@@ -45,16 +47,18 @@ class MetadataGenerator:
         Initialize the metadata generator.
         
         Args:
-            config: Generator configuration (for backward compatibility)
-            template_engine: Template engine to use. If None, creates a new one.
-            schema_validator: Schema validator (for backward compatibility)
+            config: Generator configuration
+            template_engine: Template engine to use. If None, creates a new one (for backward compatibility).
+            configuration_manager: Configuration manager to use. If None, creates a new one.
+            schema_validator: Schema validator
             schema_path: Path to the saidata schema. If None, uses the default schema.
             data_aggregator: Data aggregator to use. If None, creates a new one.
             ai_enhancer: AI metadata enhancer to use. If None, creates a new one when needed.
         """
         self.config = config or GeneratorConfig()
-        self.template_engine = template_engine or TemplateEngine()
-        self.schema_validator = schema_validator  # For backward compatibility
+        self.template_engine = template_engine or TemplateEngine()  # Keep for backward compatibility
+        self.configuration_manager = configuration_manager or ConfigurationManager()
+        self.schema_validator = schema_validator
         self.data_aggregator = data_aggregator or DataAggregator()
         self.ai_enhancer = ai_enhancer
         
@@ -82,18 +86,40 @@ class MetadataGenerator:
         Returns:
             MetadataResult with the generated metadata and validation result.
         """
-        # Start with an empty metadata object
-        metadata = {}
+        # Start with base defaults from ConfigurationManager
+        metadata = self.configuration_manager.load_base_defaults().copy()
         
-        # Apply templates
-        metadata = self.template_engine.apply_template(software_name, metadata, providers)
+        # Create provider-specific configurations using ConfigurationManager
+        if providers:
+            # Group sources by provider
+            sources_by_provider = {}
+            for source in sources:
+                if source.provider not in sources_by_provider:
+                    sources_by_provider[source.provider] = []
+                sources_by_provider[source.provider].append(source)
+            
+            # Generate provider configurations
+            provider_configs = {}
+            for provider in providers:
+                # Get repository data for this provider
+                provider_sources = sources_by_provider.get(provider, [])
+                repository_data = provider_sources[0] if provider_sources else None
+                
+                # Get merged configuration for this provider
+                provider_config = self.configuration_manager.get_provider_config(
+                    provider, software_name, repository_data
+                )
+                provider_configs[provider] = provider_config
+            
+            # Merge provider configurations into metadata
+            metadata = self._merge_provider_configurations(metadata, provider_configs)
         
         # Use the new aggregation system to merge data from sources
         aggregated_data, confidence_scores = self.data_aggregator.aggregate_package_data(
             software_name, sources
         )
         
-        # Merge the aggregated data with the template data
+        # Merge the aggregated data with the configuration data
         metadata = self._deep_merge(metadata, aggregated_data)
         
         # Create the enhanced metadata object
@@ -610,24 +636,73 @@ class MetadataGenerator:
         
         return result
     
-    def enhance_with_rag(
+    def _merge_provider_configurations(
         self,
-        metadata: Dict[str, Any],
-        rag_engine: Any
+        base_metadata: Dict[str, Any],
+        provider_configs: Dict[str, Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
-        Enhance metadata using RAG.
+        Merge provider-specific configurations into base metadata.
         
         Args:
-            metadata: Metadata to enhance.
-            rag_engine: RAG engine to use for enhancement.
+            base_metadata: Base metadata to merge into
+            provider_configs: Dictionary mapping provider names to their configurations
             
         Returns:
-            Enhanced metadata.
+            Merged metadata with provider configurations
         """
-        logger.warning("enhance_with_rag is deprecated, use generate_with_ai_enhancement instead")
-        return metadata
-    
+        result = base_metadata.copy()
+        
+        # Ensure packages section exists
+        if "packages" not in result:
+            result["packages"] = {}
+        
+        # Merge each provider's configuration
+        for provider, config in provider_configs.items():
+            # Add provider-specific package configuration
+            if "packages" in config and "default" in config["packages"]:
+                result["packages"][provider] = config["packages"]["default"]
+            
+            # Merge other sections from provider config
+            for section in ["services", "directories", "processes", "ports", "containers", "files"]:
+                if section in config:
+                    if section not in result:
+                        result[section] = {}
+                    
+                    # Merge provider-specific configurations
+                    for item_name, item_config in config[section].items():
+                        # Use provider-prefixed names to avoid conflicts
+                        provider_item_name = f"{provider}_{item_name}" if item_name != "default" else provider
+                        if provider_item_name not in result[section]:
+                            result[section][provider_item_name] = item_config
+            
+            # Merge URLs (provider-specific URLs take precedence)
+            if "urls" in config:
+                if "urls" not in result:
+                    result["urls"] = {}
+                for url_type, url in config["urls"].items():
+                    if url and (url_type not in result["urls"] or not result["urls"][url_type]):
+                        result["urls"][url_type] = url
+            
+            # Merge description (use the longest/most detailed one)
+            if "description" in config:
+                if not result.get("description") or len(config["description"]) > len(result.get("description", "")):
+                    result["description"] = config["description"]
+            
+            # Merge license
+            if "license" in config and not result.get("license"):
+                result["license"] = config["license"]
+            
+            # Merge platforms
+            if "platforms" in config:
+                if "platforms" not in result:
+                    result["platforms"] = []
+                for platform in config["platforms"]:
+                    if platform not in result["platforms"]:
+                        result["platforms"].append(platform)
+        
+        return result
+
     def get_ai_enhancement_statistics(
         self,
         results: List[AIEnhancementResult]
