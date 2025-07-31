@@ -191,9 +191,9 @@ while IFS= read -r software; do
     saidata-gen generate "$software" \
         --config "web-stack-config.yaml" \
         --output "./enhanced-metadata/${software}.yaml" \
-        --use-rag \
-        --rag-provider openai \
-        --rag-model gpt-4
+        --ai \
+        --ai-provider openai \
+        --ai-model gpt-4
     
 done < "web-stack-software.txt"
 ```

@@ -210,8 +210,8 @@ class TestEnvironmentVariableSupport:
         
         env_vars = {
             'SAIDATA_GEN_PROVIDERS': 'apt,brew,docker',
-            'SAIDATA_GEN_USE_RAG': 'true',
-            'SAIDATA_GEN_RAG_PROVIDER': 'anthropic',
+            'SAIDATA_GEN_AI': 'true',
+            'SAIDATA_GEN_AI_PROVIDER': 'anthropic',
             'SAIDATA_GEN_FORMAT': 'json',
             'SAIDATA_GEN_CONFIDENCE_THRESHOLD': '0.8',
         }
@@ -225,8 +225,8 @@ class TestEnvironmentVariableSupport:
             call_args = mock_engine.generate_metadata.call_args
             options = call_args[0][1]
             assert options.providers == ['apt', 'brew', 'docker']
-            assert options.use_rag is True
-            assert options.rag_provider == 'anthropic'
+            assert options.use_ai is True
+            assert options.ai_provider == 'anthropic'
             assert options.output_format == 'json'
             assert options.confidence_threshold == 0.8
     
@@ -244,7 +244,7 @@ class TestEnvironmentVariableSupport:
             'SAIDATA_GEN_BATCH_INPUT': str(temp_files['input_file']),
             'SAIDATA_GEN_BATCH_OUTPUT': str(output_dir),
             'SAIDATA_GEN_PROVIDERS': 'apt,brew',
-            'SAIDATA_GEN_USE_RAG': 'true',
+            'SAIDATA_GEN_AI': 'true',
             'SAIDATA_GEN_MAX_CONCURRENT': '10',
             'SAIDATA_GEN_PROGRESS_FORMAT': 'simple',
         }
@@ -260,7 +260,7 @@ class TestEnvironmentVariableSupport:
             options = call_args[0][1]
             assert options.output_dir == str(output_dir)
             assert options.providers == ['apt', 'brew']
-            assert options.use_rag is True
+            assert options.use_ai is True
             assert options.max_concurrent == 10
     
     def test_cli_args_override_env_vars(self, runner, mock_engine, sample_metadata):

@@ -34,8 +34,7 @@ saidata-gen generate [OPTIONS] SOFTWARE_NAME
 | `--providers` | `-p` | TEXT | all | Comma-separated list of providers | `SAIDATA_GEN_PROVIDERS` |
 | `--ai` | | FLAG | false | Enable AI enhancement for missing fields | `SAIDATA_GEN_AI` |
 | `--ai-provider` | | CHOICE | openai | AI provider (openai/anthropic/local) | `SAIDATA_GEN_AI_PROVIDER` |
-| `--use-rag` | | FLAG | false | Use RAG for enhanced generation (deprecated, use --ai) | `SAIDATA_GEN_USE_RAG` |
-| `--rag-provider` | | CHOICE | openai | RAG provider (deprecated, use --ai-provider) | `SAIDATA_GEN_RAG_PROVIDER` |
+
 | `--enhancement-types` | | TEXT | all | AI enhancement types (description,categorization,field_completion) | `SAIDATA_GEN_ENHANCEMENT_TYPES` |
 | `--no-validate` | | FLAG | false | Skip schema validation | `SAIDATA_GEN_NO_VALIDATE` |
 | `--format` | `-f` | CHOICE | yaml | Output format (yaml/json) | `SAIDATA_GEN_FORMAT` |
@@ -67,8 +66,8 @@ saidata-gen generate nginx --output nginx.json --format json
 # Skip validation with custom confidence threshold
 saidata-gen generate nginx --no-validate --confidence-threshold 0.8
 
-# Legacy RAG syntax (still supported)
-saidata-gen generate nginx --use-rag --rag-provider anthropic
+# AI enhancement
+saidata-gen generate nginx --ai --ai-provider anthropic
 ```
 
 #### Exit Codes
@@ -171,8 +170,7 @@ saidata-gen batch [OPTIONS]
 | `--providers` | `-p` | TEXT | all | Comma-separated providers list | `SAIDATA_GEN_PROVIDERS` |
 | `--ai` | | FLAG | false | Enable AI enhancement for missing fields | `SAIDATA_GEN_AI` |
 | `--ai-provider` | | CHOICE | openai | AI provider (openai/anthropic/local) | `SAIDATA_GEN_AI_PROVIDER` |
-| `--use-rag` | | FLAG | false | Use RAG for enhanced generation (deprecated) | `SAIDATA_GEN_USE_RAG` |
-| `--rag-provider` | | CHOICE | openai | RAG provider (deprecated) | `SAIDATA_GEN_RAG_PROVIDER` |
+
 | `--enhancement-types` | | TEXT | all | AI enhancement types | `SAIDATA_GEN_ENHANCEMENT_TYPES` |
 | `--no-validate` | | FLAG | false | Skip schema validation | `SAIDATA_GEN_NO_VALIDATE` |
 | `--format` | `-f` | CHOICE | yaml | Output format | `SAIDATA_GEN_FORMAT` |
@@ -391,8 +389,7 @@ All CLI options can be configured using environment variables:
 - `SAIDATA_GEN_AI`: Enable AI enhancement by default (true/false)
 - `SAIDATA_GEN_AI_PROVIDER`: Default AI provider (openai/anthropic/local)
 - `SAIDATA_GEN_ENHANCEMENT_TYPES`: Default AI enhancement types
-- `SAIDATA_GEN_USE_RAG`: Enable RAG by default (deprecated, use SAIDATA_GEN_AI)
-- `SAIDATA_GEN_RAG_PROVIDER`: Default RAG provider (deprecated, use SAIDATA_GEN_AI_PROVIDER)
+
 - `SAIDATA_GEN_NO_VALIDATE`: Skip validation by default (true/false)
 - `SAIDATA_GEN_FORMAT`: Default output format
 - `SAIDATA_GEN_OUTPUT`: Default output path
@@ -419,9 +416,7 @@ All CLI options can be configured using environment variables:
 - `SAIDATA_GEN_AI_RATE_LIMIT_RPM`: Rate limit requests per minute
 - `SAIDATA_GEN_AI_RATE_LIMIT_TPM`: Rate limit tokens per minute
 
-#### Legacy RAG Configuration (deprecated)
 
-- `SAIDATA_GEN_RAG_MODEL`: Default model name (use SAIDATA_GEN_AI_MODEL)
 - `SAIDATA_GEN_RAG_TEMPERATURE`: Default temperature (use SAIDATA_GEN_AI_TEMPERATURE)
 - `SAIDATA_GEN_RAG_MAX_TOKENS`: Default max tokens (use SAIDATA_GEN_AI_MAX_TOKENS)
 

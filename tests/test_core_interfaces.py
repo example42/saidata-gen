@@ -68,8 +68,8 @@ class TestOptionsClasses(unittest.TestCase):
         options = GenerationOptions()
         
         self.assertEqual(options.providers, [])
-        self.assertFalse(options.use_rag)
-        self.assertEqual(options.rag_provider, "openai")
+        self.assertFalse(options.use_ai)
+        self.assertEqual(options.ai_provider, "openai")
         self.assertFalse(options.include_dev_packages)
         self.assertEqual(options.confidence_threshold, 0.7)
         self.assertEqual(options.output_format, "yaml")
@@ -79,15 +79,15 @@ class TestOptionsClasses(unittest.TestCase):
         """Test GenerationOptions with custom values."""
         options = GenerationOptions(
             providers=["apt", "brew"],
-            use_rag=True,
-            rag_provider="anthropic",
+            use_ai=True,
+            ai_provider="anthropic",
             confidence_threshold=0.8,
             output_format="json"
         )
         
         self.assertEqual(options.providers, ["apt", "brew"])
-        self.assertTrue(options.use_rag)
-        self.assertEqual(options.rag_provider, "anthropic")
+        self.assertTrue(options.use_ai)
+        self.assertEqual(options.ai_provider, "anthropic")
         self.assertEqual(options.confidence_threshold, 0.8)
         self.assertEqual(options.output_format, "json")
     
@@ -340,13 +340,13 @@ class TestInterfaceUsage(unittest.TestCase):
         rag_options = GenerationOptions(
             providers=base_options.providers,
             confidence_threshold=base_options.confidence_threshold,
-            use_rag=True,
-            rag_provider="openai"
+            use_ai=True,
+            ai_provider="openai"
         )
         
         self.assertEqual(rag_options.providers, ["apt", "brew"])
-        self.assertTrue(rag_options.use_rag)
-        self.assertEqual(rag_options.rag_provider, "openai")
+        self.assertTrue(rag_options.use_ai)
+        self.assertEqual(rag_options.ai_provider, "openai")
     
     def test_result_aggregation(self):
         """Test result aggregation patterns."""

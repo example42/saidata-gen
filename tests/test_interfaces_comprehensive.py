@@ -202,8 +202,8 @@ class TestGenerationOptions:
         
         assert isinstance(options.providers, list)
         assert len(options.providers) == 0
-        assert options.use_rag is False
-        assert options.rag_provider == "openai"
+        assert options.use_ai is False
+        assert options.ai_provider == "openai"
         assert options.include_dev_packages is False
         assert options.confidence_threshold == 0.7
         assert options.output_format == "yaml"
@@ -213,15 +213,15 @@ class TestGenerationOptions:
         """Test initialization with custom values."""
         options = GenerationOptions(
             providers=["apt", "brew"],
-            use_rag=True,
-            rag_provider="anthropic",
+            use_ai=True,
+            ai_provider="anthropic",
             confidence_threshold=0.8,
             output_format="json"
         )
         
         assert options.providers == ["apt", "brew"]
-        assert options.use_rag is True
-        assert options.rag_provider == "anthropic"
+        assert options.use_ai is True
+        assert options.ai_provider == "anthropic"
         assert options.confidence_threshold == 0.8
         assert options.output_format == "json"
 

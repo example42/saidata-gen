@@ -101,7 +101,7 @@ class TestGenerateCommand:
         assert call_args[0][0] == 'nginx'  # software_name
         options = call_args[0][1]  # GenerationOptions
         assert options.providers == []
-        assert options.use_rag is False
+
         assert options.output_format == 'yaml'
     
     def test_generate_with_providers(self, runner, mock_engine, sample_metadata):
@@ -116,18 +116,7 @@ class TestGenerateCommand:
         options = call_args[0][1]
         assert options.providers == ['apt', 'brew', 'docker']
     
-    def test_generate_with_rag(self, runner, mock_engine, sample_metadata):
-        """Test generate command with RAG enabled."""
-        mock_result = MetadataResult(metadata=sample_metadata)
-        mock_engine.generate_metadata.return_value = mock_result
-        
-        result = runner.invoke(cli, ['generate', 'nginx', '--use-rag', '--rag-provider', 'anthropic'])
-        
-        assert result.exit_code == 0
-        call_args = mock_engine.generate_metadata.call_args
-        options = call_args[0][1]
-        assert options.use_rag is True
-        assert options.rag_provider == 'anthropic'
+
     
     def test_generate_with_output_file(self, runner, mock_engine, sample_metadata, temp_files):
         """Test generate command with output file."""
@@ -513,7 +502,7 @@ class TestGlobalOptions:
         assert 'Generate metadata for a software package' in result.output
         assert 'Examples:' in result.output
         assert '--providers' in result.output
-        assert '--use-rag' in result.output
+
 
 
 class TestErrorHandling:

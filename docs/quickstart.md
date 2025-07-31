@@ -80,7 +80,7 @@ saidata-gen batch --input software_list.txt --output ./generated/
 export OPENAI_API_KEY="your-api-key-here"
 
 # Generate with AI enhancement
-saidata-gen generate nginx --use-rag --rag-provider openai
+saidata-gen generate nginx --ai --ai-provider openai
 ```
 
 ### Workflow 4: CI/CD Integration
@@ -110,8 +110,8 @@ Common environment variables:
 
 ```bash
 export SAIDATA_GEN_PROVIDERS="apt,brew,winget,npm,pypi"
-export SAIDATA_GEN_USE_RAG="true"
-export SAIDATA_GEN_RAG_PROVIDER="openai"
+export SAIDATA_GEN_AI="true"
+export SAIDATA_GEN_AI_PROVIDER="openai"
 export OPENAI_API_KEY="your-api-key"
 export SAIDATA_GEN_CACHE_DIR="~/.saidata-gen/cache"
 ```
@@ -172,8 +172,8 @@ saidata-gen generate nginx --format json
 ### Generation Options
 
 - `--providers, -p`: Comma-separated provider list
-- `--use-rag`: Enable AI enhancement
-- `--rag-provider`: AI provider (openai, anthropic, local)
+- `--ai`: Enable AI enhancement
+- `--ai-provider`: AI provider (openai, anthropic, local)
 - `--format, -f`: Output format (yaml, json)
 - `--output, -o`: Output file path
 - `--no-validate`: Skip schema validation

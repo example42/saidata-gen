@@ -111,7 +111,7 @@ class TestSaidataEngine(unittest.TestCase):
         self.mock_validator.validate_data.return_value = mock_validation
         
         # Test generation with RAG
-        options = GenerationOptions(use_rag=True, rag_provider="openai")
+        options = GenerationOptions(use_ai=True, ai_provider="openai")
         result = self.engine.generate_metadata("nginx", options)
         
         self.assertTrue(result.success)

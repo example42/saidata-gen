@@ -48,8 +48,9 @@ packages:
 
 ### 2. CLI Options
 
-**Before:**
+**Before (deprecated):**
 ```bash
+# These options have been removed
 saidata-gen generate nginx --use-rag --rag-provider openai
 ```
 
@@ -117,8 +118,8 @@ python scripts/cleanup_provider_configs.py --provider apt
 Replace old CLI options with new ones:
 
 ```bash
-# Old way
-saidata-gen generate nginx --use-rag --rag-provider openai
+# Old way (no longer supported)
+# saidata-gen generate nginx --use-rag --rag-provider openai
 
 # New way
 saidata-gen generate nginx --ai --ai-provider openai
@@ -132,9 +133,9 @@ saidata-gen generate nginx --ai --enhancement-types description,field_completion
 Update your environment configuration:
 
 ```bash
-# Old variables (still supported but deprecated)
-export SAIDATA_GEN_USE_RAG=true
-export SAIDATA_GEN_RAG_PROVIDER=openai
+# Old variables (no longer supported)
+# export SAIDATA_GEN_USE_RAG=true
+# export SAIDATA_GEN_RAG_PROVIDER=openai
 
 # New variables
 export SAIDATA_GEN_AI=true
@@ -150,7 +151,7 @@ Update any scripts or automation that use saidata-gen:
 ```bash
 #!/bin/bash
 for software in nginx apache2 mysql; do
-    saidata-gen generate $software --use-rag --providers apt,brew
+    saidata-gen generate $software --ai --providers apt,brew
 done
 ```
 
@@ -181,11 +182,11 @@ saidata-gen generate nginx --ai --output-structure hierarchical
 
 ### Backward Compatibility
 
-The following features are maintained for backward compatibility but are deprecated:
+The following features have been removed and are no longer supported:
 
-1. **RAG CLI Options**: `--use-rag` and `--rag-provider` still work but show deprecation warnings
-2. **RAG Environment Variables**: `SAIDATA_GEN_USE_RAG` and `SAIDATA_GEN_RAG_PROVIDER` still work
-3. **Full Provider Templates**: Old-style templates still work but are not optimal
+1. **Deprecated CLI Options**: `--use-rag`, `--rag-provider`, `--directory-structure`, and `--comprehensive` have been removed
+2. **Deprecated Environment Variables**: `SAIDATA_GEN_USE_RAG` and `SAIDATA_GEN_RAG_PROVIDER` are no longer supported
+3. **Legacy Templates**: Full provider templates are still supported but override-only templates are preferred
 
 ### Deprecation Timeline
 
@@ -198,8 +199,8 @@ The following features are maintained for backward compatibility but are depreca
 You'll see warnings like:
 
 ```
-DeprecationWarning: --use-rag is deprecated, use --ai instead
-DeprecationWarning: SAIDATA_GEN_RAG_PROVIDER is deprecated, use SAIDATA_GEN_AI_PROVIDER instead
+Error: Unknown option '--use-rag'. Use '--ai' instead.
+Error: Unknown option '--rag-provider'. Use '--ai-provider' instead.
 ```
 
 ## New Features Available After Migration
@@ -394,7 +395,7 @@ If you encounter issues during migration:
 
 - [ ] Analyzed existing provider templates with validator
 - [ ] Cleaned up redundant configurations
-- [ ] Updated CLI commands to use `--ai` instead of `--use-rag`
+- [x] Updated CLI commands to use `--ai` instead of `--use-rag`
 - [ ] Updated environment variables
 - [ ] Updated scripts and automation
 - [ ] Tested AI enhancement functionality

@@ -202,45 +202,7 @@ class TestMetadataGenerator(unittest.TestCase):
         self.assertEqual(result["urls"]["website"], "https://nginx.org/")
         self.assertEqual(result["urls"]["documentation"], "https://nginx.org/en/docs/")
     
-    def test_enhance_with_rag(self):
-        """Test enhancing metadata with RAG."""
-        base_metadata = {
-            "version": "0.1",
-            "description": "Basic description",
-            "packages": {"apt": {"name": "nginx"}}
-        }
-        
-        mock_rag_engine = Mock()
-        mock_rag_engine.enhance_description.return_value = "Enhanced description with AI insights"
-        mock_rag_engine.categorize_software.return_value = {
-            "default": "Web",
-            "sub": "Server",
-            "tags": ["http", "proxy", "server", "web"]
-        }
-        mock_rag_engine.fill_missing_fields.return_value = {
-            **base_metadata,
-            "description": "Enhanced description with AI insights",
-            "category": {
-                "default": "Web",
-                "sub": "Server", 
-                "tags": ["http", "proxy", "server", "web"]
-            },
-            "urls": {
-                "website": "https://nginx.org/",
-                "documentation": "https://nginx.org/en/docs/"
-            }
-        }
-        
-        result = self.generator.enhance_with_rag(base_metadata, mock_rag_engine)
-        
-        self.assertEqual(result["description"], "Enhanced description with AI insights")
-        self.assertEqual(result["category"]["default"], "Web")
-        self.assertEqual(len(result["category"]["tags"]), 4)
-        self.assertEqual(result["urls"]["website"], "https://nginx.org/")
-        
-        mock_rag_engine.enhance_description.assert_called_once()
-        mock_rag_engine.categorize_software.assert_called_once()
-        mock_rag_engine.fill_missing_fields.assert_called_once()
+
     
     def test_normalize_package_info(self):
         """Test normalizing package information from different providers."""

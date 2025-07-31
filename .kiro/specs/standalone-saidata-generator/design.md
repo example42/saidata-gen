@@ -444,8 +444,8 @@ saidata-gen validate nginx.yaml
 # Fetch repository data
 saidata-gen fetch --providers apt,brew --cache-dir ./cache/
 
-# RAG-enhanced generation
-saidata-gen generate nginx --use-rag --rag-provider openai
+# AI-enhanced generation
+saidata-gen generate nginx --ai --ai-provider openai
 
 # Export training data
 saidata-gen ml export-training-data --format jsonl --output training.jsonl

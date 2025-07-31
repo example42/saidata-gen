@@ -89,7 +89,7 @@
   - Implement log_degradation_event() method for monitoring and debugging
   - _Requirements: 6.3, 7.1, 8.3_
 
-- [ ] 12. Clean up the repo: Analyse and remove every method, code, and test not used anymore
+- [x] 12. Clean up the repo: Analyse and remove every method, code, and test not used anymore
   - Remove unused, deprecated and obsolete code
   - Remove any backwards incompatibily implementation (we don't care about backwards incompability at this stage)
   - Remove all relevant tests
