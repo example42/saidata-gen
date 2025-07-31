@@ -507,3 +507,514 @@ class TestFetcherErrorHandlerIntegration:
         
         assert result == {"key": "value"}
         assert mock_json_loads.call_count == 2  # First fails, second succeeds
+
+# Additional network failure and SSL error test scenarios
+class TestFetcherErrorHandlerEnhanced:
+    """Enhanced test cases for FetcherErrorHandler with additional network failure scenarios."""
+    
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.handler = FetcherErrorHandler(max_retries=3, base_wait_time=0.1)
+        self.context = ErrorContext(
+            provider="test_provider",
+            url="https://example.com/test",
+            attempt=1,
+            max_attempts=3
+        )
+    
+    def test_handle_network_error_dns_resolution_failure(self):
+        """Test handling of DNS resolution failures."""
+        class DNSError(Exception):
+            pass
+        error = DNSError("Name or service not known")
+        
+        with patch.object(self.handler, 'should_retry') as mock_should_retry:
+            mock_should_retry.return_value = RetryResult(
+                should_retry=True,
+                wait_time=0.1,
+                reason="DNS resolution error"
+            )
+            
+            with patch('time.sleep'):
+                result = self.handler.handle_network_error(error, self.context)
+        
+        assert not result.success
+        assert "DNS resolution error" in mock_should_retry.return_value.reason
+        assert "https://example.com/test" in self.handler._network_failed_urls
+    
+    def test_handle_network_error_proxy_authentication_failure(self):
+        """Test handling of proxy authentication failures."""
+        class ProxyError(Exception):
+            def __init__(self, message):
+                super().__init__(message)
+                self.response = Mock()
+                self.response.status_code = 407
+        
+        error = ProxyError("Proxy authentication required")
+        
+        with patch.object(self.handler, 'should_retry') as mock_should_retry:
+            mock_should_retry.return_value = RetryResult(
+                should_retry=False,
+                reason="Non-retryable HTTP status: 407"
+            )
+            
+            result = self.handler.handle_network_error(error, self.context)
+        
+        assert not result.success
+        assert "Network error (final)" in result.errors["test_provider"]
+    
+    def test_handle_network_error_rate_limiting(self):
+        """Test handling of rate limiting errors."""
+        class RateLimitError(Exception):
+            def __init__(self, message):
+                super().__init__(message)
+                self.response = Mock()
+                self.response.status_code = 429
+                self.response.headers = {'Retry-After': '60'}
+        
+        error = RateLimitError("Too Many Requests")
+        
+        with patch.object(self.handler, 'should_retry') as mock_should_retry:
+            mock_should_retry.return_value = RetryResult(
+                should_retry=True,
+                wait_time=60.0,
+                reason="Retryable HTTP status: 429"
+            )
+            
+            with patch('time.sleep'):
+                result = self.handler.handle_network_error(error, self.context)
+        
+        assert not result.success
+        assert "Network error (will retry)" in result.errors["test_provider"]
+    
+    def test_handle_network_error_server_overload(self):
+        """Test handling of server overload scenarios."""
+        class ServerError(Exception):
+            def __init__(self, message):
+                super().__init__(message)
+                self.response = Mock()
+                self.response.status_code = 503
+        
+        error = ServerError("Service Temporarily Unavailable")
+        
+        with patch.object(self.handler, 'should_retry') as mock_should_retry:
+            mock_should_retry.return_value = RetryResult(
+                should_retry=True,
+                wait_time=2.0,
+                reason="Retryable HTTP status: 503"
+            )
+            
+            with patch('time.sleep'):
+                result = self.handler.handle_network_error(error, self.context)
+        
+        assert not result.success
+        assert "Network error (will retry)" in result.errors["test_provider"]
+    
+    def test_handle_network_error_connection_pool_exhaustion(self):
+        """Test handling of connection pool exhaustion."""
+        class PoolError(Exception):
+            pass
+        error = PoolError("HTTPSConnectionPool: Max retries exceeded")
+        
+        with patch.object(self.handler, 'should_retry') as mock_should_retry:
+            mock_should_retry.return_value = RetryResult(
+                should_retry=True,
+                wait_time=1.0,
+                reason="Connection pool exhaustion"
+            )
+            
+            with patch('time.sleep'):
+                result = self.handler.handle_network_error(error, self.context)
+        
+        assert not result.success
+        assert "test_provider" in result.errors
+    
+    @patch('saidata_gen.fetcher.error_handler.REQUESTS_AVAILABLE', True)
+    def test_handle_ssl_error_certificate_expired(self):
+        """Test handling of expired SSL certificates."""
+        class SSLCertificateError(Exception):
+            pass
+        error = SSLCertificateError("certificate verify failed: certificate has expired")
+        
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.content = b"success"
+        
+        with patch.object(self.handler, '_try_ssl_verification_disabled') as mock_fallback:
+            mock_fallback.return_value = mock_response
+            
+            result = self.handler.handle_ssl_error(error, self.context)
+        
+        assert result is not None
+        assert result.status_code == 200
+        assert "https://example.com/test" in self.handler._ssl_failed_urls
+    
+    @patch('saidata_gen.fetcher.error_handler.REQUESTS_AVAILABLE', True)
+    def test_handle_ssl_error_hostname_mismatch(self):
+        """Test handling of SSL hostname mismatch errors."""
+        class SSLHostnameError(Exception):
+            pass
+        error = SSLHostnameError("hostname 'example.com' doesn't match certificate")
+        
+        # Mock all fallback strategies failing
+        with patch.object(self.handler, '_try_ssl_verification_disabled') as mock_fallback1:
+            with patch.object(self.handler, '_try_alternative_ssl_context') as mock_fallback2:
+                with patch.object(self.handler, '_try_http_fallback') as mock_fallback3:
+                    mock_fallback1.return_value = None
+                    mock_fallback2.return_value = None
+                    mock_fallback3.return_value = None
+                    
+                    result = self.handler.handle_ssl_error(error, self.context)
+        
+        assert result is None
+        assert "https://example.com/test" in self.handler._ssl_failed_urls
+    
+    @patch('saidata_gen.fetcher.error_handler.REQUESTS_AVAILABLE', True)
+    def test_handle_ssl_error_self_signed_certificate(self):
+        """Test handling of self-signed certificate errors."""
+        class SSLSelfSignedError(Exception):
+            pass
+        error = SSLSelfSignedError("self signed certificate")
+        
+        # Mock successful fallback with disabled verification
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.content = b"self-signed success"
+        
+        with patch.object(self.handler, '_try_ssl_verification_disabled') as mock_fallback:
+            mock_fallback.return_value = mock_response
+            
+            result = self.handler.handle_ssl_error(error, self.context)
+        
+        assert result is not None
+        assert result.content == b"self-signed success"
+    
+    @patch('saidata_gen.fetcher.error_handler.REQUESTS_AVAILABLE', True)
+    def test_handle_ssl_error_weak_cipher(self):
+        """Test handling of weak cipher SSL errors."""
+        class SSLWeakCipherError(Exception):
+            pass
+        error = SSLWeakCipherError("sslv3 alert handshake failure")
+        
+        # Mock alternative SSL context success
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.content = b"alternative context success"
+        
+        with patch.object(self.handler, '_try_ssl_verification_disabled') as mock_fallback1:
+            with patch.object(self.handler, '_try_alternative_ssl_context') as mock_fallback2:
+                mock_fallback1.return_value = None
+                mock_fallback2.return_value = mock_response
+                
+                result = self.handler.handle_ssl_error(error, self.context)
+        
+        assert result is not None
+        assert result.content == b"alternative context success"
+    
+    def test_handle_malformed_data_corrupted_json_with_encoding_issues(self):
+        """Test handling of corrupted JSON with encoding issues."""
+        # JSON with encoding issues and syntax errors
+        corrupted_json = b'\xff\xfe{"key": "value\x00", "invalid": }'
+        
+        with patch.object(self.handler, '_handle_malformed_json') as mock_handler:
+            mock_handler.return_value = {"key": "value"}
+            
+            result = self.handler.handle_malformed_data(corrupted_json, "json", self.context)
+        
+        assert result is not None
+        assert result == {"key": "value"}
+        mock_handler.assert_called_once_with(corrupted_json, self.context)
+    
+    def test_handle_malformed_data_xml_with_invalid_characters(self):
+        """Test handling of XML with invalid characters."""
+        # XML with control characters and encoding issues
+        malformed_xml = b'<?xml version="1.0"?>\x00<root>\x01<item>value\x02</item></root>'
+        
+        with patch.object(self.handler, '_handle_malformed_xml') as mock_handler:
+            mock_handler.return_value = {"root": {"item": "value"}}
+            
+            result = self.handler.handle_malformed_data(malformed_xml, "xml", self.context)
+        
+        assert result is not None
+        assert result == {"root": {"item": "value"}}
+    
+    def test_handle_malformed_data_yaml_with_tab_indentation(self):
+        """Test handling of YAML with tab indentation issues."""
+        # YAML with tabs instead of spaces
+        malformed_yaml = b'key: value\n\tindented:\n\t\tdeep: item'
+        
+        with patch.object(self.handler, '_handle_malformed_yaml') as mock_handler:
+            mock_handler.return_value = {"key": "value", "indented": {"deep": "item"}}
+            
+            result = self.handler.handle_malformed_data(malformed_yaml, "yaml", self.context)
+        
+        assert result is not None
+        assert result == {"key": "value", "indented": {"deep": "item"}}
+    
+    def test_should_retry_with_custom_error_types(self):
+        """Test retry logic with custom error types."""
+        # Test custom timeout error
+        class CustomTimeoutError(Exception):
+            pass
+        
+        error = CustomTimeoutError("Custom timeout occurred")
+        result = self.handler.should_retry(error, 1)
+        
+        # Should not retry unknown error types by default
+        assert not result.should_retry
+        assert "Non-retryable error type" in result.reason
+    
+    def test_should_retry_with_http_error_edge_cases(self):
+        """Test retry logic with HTTP error edge cases."""
+        # Test 502 Bad Gateway (should retry)
+        class HTTPError(Exception):
+            def __init__(self, status_code):
+                self.response = Mock()
+                self.response.status_code = status_code
+        
+        error_502 = HTTPError(502)
+        result = self.handler.should_retry(error_502, 1)
+        assert result.should_retry
+        assert "Retryable HTTP status: 502" in result.reason
+        
+        # Test 401 Unauthorized (should not retry)
+        error_401 = HTTPError(401)
+        result = self.handler.should_retry(error_401, 1)
+        assert not result.should_retry
+        assert "Non-retryable HTTP status: 401" in result.reason
+        
+        # Test 403 Forbidden (should not retry)
+        error_403 = HTTPError(403)
+        result = self.handler.should_retry(error_403, 1)
+        assert not result.should_retry
+        assert "Non-retryable HTTP status: 403" in result.reason
+    
+    def test_calculate_backoff_time_with_high_attempts(self):
+        """Test exponential backoff with high attempt numbers."""
+        # Test that backoff time is within reasonable ranges (due to jitter, exact ordering isn't guaranteed)
+        time_1 = self.handler._calculate_backoff_time(1)
+        time_2 = self.handler._calculate_backoff_time(2)
+        time_3 = self.handler._calculate_backoff_time(3)
+        
+        # Should be reasonable for low attempts (base_wait_time = 0.1)
+        # Attempt 1: 0.1 * 2^0 + jitter = 0.1 + (0.1 to 0.5) = 0.2 to 0.6
+        assert 0.2 <= time_1 <= 0.6
+        # Attempt 2: 0.1 * 2^1 + jitter = 0.2 + (0.1 to 0.5) = 0.3 to 0.7
+        assert 0.3 <= time_2 <= 0.7
+        # Attempt 3: 0.1 * 2^2 + jitter = 0.4 + (0.1 to 0.5) = 0.5 to 0.9
+        assert 0.5 <= time_3 <= 0.9
+        
+        # Test that all times are positive
+        assert time_1 > 0
+        assert time_2 > 0
+        assert time_3 > 0
+    
+    def test_error_statistics_comprehensive(self):
+        """Test comprehensive error statistics tracking."""
+        # Generate various types of errors
+        network_error = Exception("Network error")
+        ssl_error = Exception("SSL error")
+        
+        # Multiple network errors
+        for i in range(3):
+            self.handler.handle_network_error(network_error, self.context)
+        
+        # Multiple SSL errors
+        for i in range(2):
+            self.handler.handle_ssl_error(ssl_error, self.context)
+        
+        # Malformed data errors
+        self.handler.handle_malformed_data(b'invalid json', 'json', self.context)
+        
+        stats = self.handler.get_error_statistics()
+        
+        assert stats["error_counts"]["network_errors"] == 3
+        assert stats["error_counts"]["ssl_errors"] == 2
+        assert stats["error_counts"]["malformed_data_errors"] == 1
+        assert stats["total_failed_urls"] >= 1  # At least one unique URL
+        
+        # Check that URLs are tracked correctly
+        assert len(stats["failed_urls"]["network_failed"]) >= 1
+        assert len(stats["failed_urls"]["ssl_failed"]) >= 1
+        assert len(stats["failed_urls"]["malformed_data"]) >= 1
+    
+    @patch('saidata_gen.fetcher.error_handler.REQUESTS_AVAILABLE', True)
+    def test_ssl_fallback_strategies_comprehensive(self):
+        """Test all SSL fallback strategies comprehensively."""
+        ssl_error = Exception("SSL certificate error")
+        
+        # Test each fallback strategy individually
+        with patch.object(self.handler, '_try_ssl_verification_disabled') as mock_disabled:
+            with patch.object(self.handler, '_try_alternative_ssl_context') as mock_alt_context:
+                with patch.object(self.handler, '_try_http_fallback') as mock_http:
+                    
+                    # Test first strategy success
+                    mock_response = Mock()
+                    mock_response.status_code = 200
+                    mock_disabled.return_value = mock_response
+                    mock_alt_context.return_value = None
+                    mock_http.return_value = None
+                    
+                    result = self.handler.handle_ssl_error(ssl_error, self.context)
+                    
+                    assert result is not None
+                    assert result.status_code == 200
+                    mock_disabled.assert_called_once()
+                    # Other strategies should not be called if first succeeds
+                    mock_alt_context.assert_not_called()
+                    mock_http.assert_not_called()
+    
+    def test_malformed_data_encoding_fallback_comprehensive(self):
+        """Test comprehensive encoding fallback for malformed data."""
+        # Test data with various encoding issues
+        test_cases = [
+            (b'\xff\xfe{"key": "value"}', 'json'),  # UTF-16 BOM
+            (b'\xef\xbb\xbf{"key": "value"}', 'json'),  # UTF-8 BOM
+            (b'{"key": "value"}', 'json'),  # Clean UTF-8
+            (b'\x80\x81{"key": "value"}', 'json'),  # Invalid UTF-8
+        ]
+        
+        for data, format_type in test_cases:
+            with patch.object(self.handler, f'_handle_malformed_{format_type}') as mock_handler:
+                mock_handler.return_value = {"key": "value"}
+                
+                result = self.handler.handle_malformed_data(data, format_type, self.context)
+                
+                assert result is not None
+                assert result == {"key": "value"}
+                mock_handler.assert_called_once_with(data, self.context)
+                mock_handler.reset_mock()
+    
+    def test_concurrent_error_handling(self):
+        """Test error handling under concurrent scenarios."""
+        import threading
+        import time
+        
+        errors = []
+        
+        def generate_errors():
+            for i in range(10):
+                try:
+                    error = Exception(f"Concurrent error {i}")
+                    result = self.handler.handle_network_error(error, self.context)
+                    errors.append(result)
+                except Exception as e:
+                    errors.append(e)
+                time.sleep(0.01)  # Small delay to simulate real conditions
+        
+        # Start multiple threads
+        threads = []
+        for _ in range(3):
+            thread = threading.Thread(target=generate_errors)
+            threads.append(thread)
+            thread.start()
+        
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join()
+        
+        # Verify that all errors were handled without exceptions
+        assert len(errors) == 30  # 3 threads * 10 errors each
+        assert all(isinstance(error, FetchResult) for error in errors)
+        
+        # Verify statistics are consistent
+        stats = self.handler.get_error_statistics()
+        assert stats["error_counts"]["network_errors"] == 30
+
+
+# Mock network failure scenarios for integration testing
+class TestNetworkFailureScenarios:
+    """Test cases for various network failure scenarios."""
+    
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.handler = FetcherErrorHandler(max_retries=3, base_wait_time=0.1)
+    
+    @patch('saidata_gen.fetcher.error_handler.REQUESTS_AVAILABLE', True)
+    def test_intermittent_network_connectivity(self):
+        """Test handling of intermittent network connectivity."""
+        context = ErrorContext(
+            provider="intermittent_provider",
+            url="https://unstable.example.com",
+            attempt=1,
+            max_attempts=3
+        )
+        
+        # Simulate intermittent failures
+        connection_errors = [
+            Exception("Connection timed out"),
+            Exception("Network is unreachable"),
+            Exception("Connection refused")
+        ]
+        
+        results = []
+        for error in connection_errors:
+            with patch('time.sleep'):  # Speed up test
+                result = self.handler.handle_network_error(error, context)
+                results.append(result)
+                context.attempt += 1
+        
+        # All should be handled gracefully
+        assert all(not result.success for result in results)
+        assert len(self.handler._network_failed_urls) == 1  # Same URL
+        assert self.handler._error_stats['network_errors'] == 3
+    
+    @patch('saidata_gen.fetcher.error_handler.REQUESTS_AVAILABLE', True)
+    def test_cascading_ssl_failures(self):
+        """Test handling of cascading SSL failures across multiple URLs."""
+        ssl_contexts = [
+            ErrorContext("provider1", "https://expired-cert.example.com", 1, 3),
+            ErrorContext("provider2", "https://self-signed.example.com", 1, 3),
+            ErrorContext("provider3", "https://wrong-host.example.com", 1, 3),
+        ]
+        
+        ssl_errors = [
+            Exception("certificate has expired"),
+            Exception("self signed certificate"),
+            Exception("hostname mismatch")
+        ]
+        
+        results = []
+        for context, error in zip(ssl_contexts, ssl_errors):
+            with patch.object(self.handler, '_try_ssl_verification_disabled') as mock_fallback:
+                mock_fallback.return_value = None  # All fallbacks fail
+                result = self.handler.handle_ssl_error(error, context)
+                results.append(result)
+        
+        # All should fail
+        assert all(result is None for result in results)
+        assert len(self.handler._ssl_failed_urls) == 3
+        assert self.handler._error_stats['ssl_errors'] == 3
+    
+    def test_mixed_error_scenarios(self):
+        """Test handling of mixed error scenarios in a single session."""
+        contexts = [
+            ErrorContext("provider1", "https://timeout.example.com", 1, 3),
+            ErrorContext("provider2", "https://ssl-error.example.com", 1, 3),
+            ErrorContext("provider3", "https://malformed.example.com", 1, 3),
+        ]
+        
+        # Network error
+        network_error = Exception("Connection timeout")
+        with patch('time.sleep'):
+            network_result = self.handler.handle_network_error(network_error, contexts[0])
+        
+        # SSL error
+        ssl_error = Exception("SSL certificate error")
+        ssl_result = self.handler.handle_ssl_error(ssl_error, contexts[1])
+        
+        # Malformed data error
+        malformed_data = b'{"invalid": json}'
+        malformed_result = self.handler.handle_malformed_data(malformed_data, 'json', contexts[2])
+        
+        # Verify all were handled
+        assert not network_result.success
+        assert ssl_result is None
+        assert malformed_result is None
+        
+        # Verify statistics
+        stats = self.handler.get_error_statistics()
+        assert stats["error_counts"]["network_errors"] == 1
+        assert stats["error_counts"]["ssl_errors"] == 1
+        assert stats["error_counts"]["malformed_data_errors"] == 1
+        assert stats["total_failed_urls"] == 3
