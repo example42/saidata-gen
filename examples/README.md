@@ -15,7 +15,22 @@ This directory contains example configurations, scripts, and use cases for the s
 1. **Basic Generation**: See `configs/basic.yaml` for minimal configuration
 2. **Enterprise Setup**: Check `configs/enterprise.yaml` for production environments
 3. **CI/CD Integration**: Look at `scripts/ci-cd-pipeline.sh` for automation
-4. **RAG Enhancement**: Explore `rag/` directory for AI-powered metadata generation
+4. **AI Enhancement**: Explore `rag/` directory for AI-powered metadata generation
+
+## New Directory Structure Output
+
+saidata-gen now generates structured directory output:
+
+```
+nginx/
+├── defaults.yaml              # Software-specific base configuration
+└── providers/                 # Provider-specific overrides (only when different from defaults)
+    ├── apt.yaml              # Only created if apt config differs from provider_defaults.yaml
+    ├── brew.yaml             # Only created if brew config differs from provider_defaults.yaml
+    └── docker.yaml           # Only created if docker config differs from provider_defaults.yaml
+```
+
+All examples have been updated to work with this new structure.
 
 ## Configuration Examples
 

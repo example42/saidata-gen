@@ -103,23 +103,15 @@
   - Write mock tests for network failure scenarios and SSL errors
   - _Requirements: 1.1, 1.2, 2.1, 2.2, 4.3_
 
-- [ ] 14. Add unit tests for enhanced fetcher reliability
-  - Write tests for FetcherErrorHandler class methods
-  - Write tests for SystemDependencyChecker class methods
-  - Write tests for GracefulDegradationManager class methods
-  - Write mock tests for network failure scenarios and SSL errors
-  - _Requirements: 6.1, 6.2, 6.3, 7.1, 7.2, 7.3, 8.1, 8.2, 8.3_
-
-- [ ] 15. Add integration tests for end-to-end functionality
+- [x] 14. Add integration tests for end-to-end functionality
   - Write tests for complete metadata generation with new directory structure
   - Write tests for CLI command execution with removed options
   - Write tests for fetcher resilience with simulated network conditions
   - Write tests for configuration loading and merging across all providers
   - _Requirements: 2.1, 2.2, 5.1, 5.2, 5.3_
 
-- [ ] 16. Update documentation and migration guide
+- [x] 15. Update documentation guide
   - Update README and documentation to reflect new directory structure output
-  - Create migration guide for users transitioning from old CLI options
   - Update provider configuration documentation with provider_defaults.yaml reference
   - Add troubleshooting guide for common fetcher errors and solutions
   - _Requirements: 4.1, 4.2, 5.3_

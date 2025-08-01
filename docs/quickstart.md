@@ -16,13 +16,15 @@ pip install saidata-gen
 saidata-gen generate nginx
 ```
 
-This generates a complete saidata YAML file for nginx by gathering information from multiple package repositories.
+This generates a structured directory with complete saidata YAML files for nginx by gathering information from multiple package repositories.
 
-### 2. Save to File
+### 2. Generate in Specific Directory
 
 ```bash
-saidata-gen generate nginx --output nginx.yaml
+saidata-gen generate nginx --output ./generated/
 ```
+
+This creates the nginx directory structure under `./generated/nginx/`.
 
 ### 3. Use Specific Providers
 
@@ -33,7 +35,8 @@ saidata-gen generate nginx --providers apt,brew,docker
 ### 4. Validate Generated Files
 
 ```bash
-saidata-gen validate nginx.yaml
+saidata-gen validate nginx/defaults.yaml
+saidata-gen validate nginx/providers/apt.yaml
 ```
 
 ### 5. Search for Software
@@ -47,14 +50,15 @@ saidata-gen search "web server"
 ### Workflow 1: Single Package Generation
 
 ```bash
-# Generate metadata
-saidata-gen generate apache2 --output apache2.yaml
+# Generate metadata (creates structured directory)
+saidata-gen generate apache2
 
-# Validate the result
-saidata-gen validate apache2.yaml
+# Validate the results
+saidata-gen validate apache2/defaults.yaml
 
-# View the generated file
-cat apache2.yaml
+# View the generated files
+cat apache2/defaults.yaml
+ls apache2/providers/
 ```
 
 ### Workflow 2: Batch Processing
@@ -115,6 +119,26 @@ export SAIDATA_GEN_AI_PROVIDER="openai"
 export OPENAI_API_KEY="your-api-key"
 export SAIDATA_GEN_CACHE_DIR="~/.saidata-gen/cache"
 ```
+
+## Directory Structure Output
+
+saidata-gen now generates a structured directory format for each software package:
+
+```
+nginx/
+├── defaults.yaml              # Software-specific base configuration
+└── providers/                 # Provider-specific overrides (only when different from defaults)
+    ├── apt.yaml              # Only created if apt config differs from provider_defaults.yaml
+    ├── brew.yaml             # Only created if brew config differs from provider_defaults.yaml
+    └── docker.yaml           # Only created if docker config differs from provider_defaults.yaml
+```
+
+### Benefits of Directory Structure
+
+- **Organized**: Clear separation between base configuration and provider-specific overrides
+- **Efficient**: Provider files are only created when they differ from defaults
+- **Maintainable**: Easy to understand and modify individual provider configurations
+- **Scalable**: Supports complex software packages with many provider variations
 
 ## Output Formats
 

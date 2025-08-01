@@ -17,11 +17,13 @@ These options apply to all commands:
 
 ### `generate`
 
-Generate metadata for a software package.
+Generate metadata for a software package in structured directory format.
 
 ```bash
 saidata-gen generate [OPTIONS] SOFTWARE_NAME
 ```
+
+**Note**: The generate command now always creates a structured directory output with `$software/defaults.yaml` and `$software/providers/$provider.yaml` files. Provider-specific files are only created when they differ from the defaults in `provider_defaults.yaml`.
 
 #### Arguments
 
@@ -38,14 +40,26 @@ saidata-gen generate [OPTIONS] SOFTWARE_NAME
 | `--enhancement-types` | | TEXT | all | AI enhancement types (description,categorization,field_completion) | `SAIDATA_GEN_ENHANCEMENT_TYPES` |
 | `--no-validate` | | FLAG | false | Skip schema validation | `SAIDATA_GEN_NO_VALIDATE` |
 | `--format` | `-f` | CHOICE | yaml | Output format (yaml/json) | `SAIDATA_GEN_FORMAT` |
-| `--output` | `-o` | PATH | - | Output file path | `SAIDATA_GEN_OUTPUT` |
-| `--output-structure` | | CHOICE | flat | Output structure (flat/hierarchical) | `SAIDATA_GEN_OUTPUT_STRUCTURE` |
+| `--output` | `-o` | PATH | . | Output directory path | `SAIDATA_GEN_OUTPUT` |
 | `--confidence-threshold` | | FLOAT | 0.7 | Minimum confidence threshold | `SAIDATA_GEN_CONFIDENCE_THRESHOLD` |
+
+#### Output Structure
+
+The generate command creates a structured directory:
+
+```
+nginx/                         # Created in current directory or --output path
+├── defaults.yaml              # Software-specific base configuration
+└── providers/                 # Provider-specific overrides (only when different from defaults)
+    ├── apt.yaml              # Only created if apt config differs from provider_defaults.yaml
+    ├── brew.yaml             # Only created if brew config differs from provider_defaults.yaml
+    └── docker.yaml           # Only created if docker config differs from provider_defaults.yaml
+```
 
 #### Examples
 
 ```bash
-# Basic generation
+# Basic generation (creates nginx/ directory)
 saidata-gen generate nginx
 
 # Use specific providers
@@ -57,11 +71,11 @@ saidata-gen generate nginx --ai --ai-provider openai
 # AI enhancement with specific types
 saidata-gen generate nginx --ai --enhancement-types description,field_completion
 
-# Generate with hierarchical output structure
-saidata-gen generate nginx --output-structure hierarchical
+# Generate in specific directory
+saidata-gen generate nginx --output ./generated/
 
-# Save to file with JSON format
-saidata-gen generate nginx --output nginx.json --format json
+# Generate with JSON format (affects defaults.yaml format)
+saidata-gen generate nginx --format json
 
 # Skip validation with custom confidence threshold
 saidata-gen generate nginx --no-validate --confidence-threshold 0.8
@@ -99,11 +113,17 @@ saidata-gen validate [OPTIONS] FILE_PATH
 #### Examples
 
 ```bash
-# Basic validation
-saidata-gen validate nginx.yaml
+# Validate main configuration file
+saidata-gen validate nginx/defaults.yaml
 
-# Detailed validation output
-saidata-gen validate nginx.yaml --detailed
+# Validate provider-specific file
+saidata-gen validate nginx/providers/apt.yaml
+
+# Validate with detailed output
+saidata-gen validate nginx/defaults.yaml --detailed
+
+# Validate all files in directory
+find nginx/ -name "*.yaml" -exec saidata-gen validate {} \;
 ```
 
 #### Exit Codes

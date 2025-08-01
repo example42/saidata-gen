@@ -115,7 +115,7 @@ process_software_list() {
     log_info "Total packages to process: $total_count"
     
     # Initialize results tracking
-    echo "timestamp,software,status,duration,file_size,validation_result" > "$SAIDATA_OUTPUT_DIR/reports/processing-results.csv"
+    echo "timestamp,software,status,duration,directory_size,validation_result" > "$SAIDATA_OUTPUT_DIR/reports/processing-results.csv"
     
     # Process each software package
     while IFS= read -r software; do
@@ -123,34 +123,48 @@ process_software_list() {
         [[ -z "$software" || "$software" =~ ^#.*$ ]] && continue
         
         local package_start_time=$(date +%s)
-        local output_file="$SAIDATA_OUTPUT_DIR/metadata/${software}.yaml"
+        local output_dir="$SAIDATA_OUTPUT_DIR/metadata"
+        local software_dir="$output_dir/${software}"
+        local defaults_file="$software_dir/defaults.yaml"
         local log_file="$SAIDATA_OUTPUT_DIR/logs/${software}.log"
         
         log_info "Processing: $software"
         
-        # Generate metadata
+        # Generate metadata (creates structured directory)
         local ai_flags=""
         if [ "$SAIDATA_AI_ENABLED" = "true" ]; then
             ai_flags="--ai --ai-provider $SAIDATA_AI_PROVIDER"
         fi
         
         if saidata-gen --config "$SAIDATA_CONFIG" generate "$software" \
-            --output "$output_file" \
+            --output "$output_dir" \
             --providers "$SAIDATA_PROVIDERS" \
             --confidence-threshold "$SAIDATA_CONFIDENCE_THRESHOLD" \
             $ai_flags \
             > "$log_file" 2>&1; then
             
-            # Validate generated file
-            if saidata-gen validate "$output_file" >> "$log_file" 2>&1; then
+            # Validate generated files
+            local validation_success=true
+            
+            # Validate main defaults file
+            if ! saidata-gen validate "$defaults_file" >> "$log_file" 2>&1; then
+                validation_success=false
+            fi
+            
+            # Validate provider files if they exist
+            if [ -d "$software_dir/providers" ]; then
+                find "$software_dir/providers" -name "*.yaml" -exec saidata-gen validate {} \; >> "$log_file" 2>&1 || validation_success=false
+            fi
+            
+            if [ "$validation_success" = true ]; then
                 local package_end_time=$(date +%s)
                 local duration=$((package_end_time - package_start_time))
-                local file_size=$(stat -f%z "$output_file" 2>/dev/null || stat -c%s "$output_file" 2>/dev/null || echo "0")
+                local dir_size=$(du -sb "$software_dir" 2>/dev/null | cut -f1 || echo "0")
                 
                 success_count=$((success_count + 1))
-                log_success "$software - Generated and validated (${duration}s, ${file_size} bytes)"
+                log_success "$software - Generated and validated (${duration}s, ${dir_size} bytes)"
                 
-                echo "$(date -Iseconds),$software,success,$duration,$file_size,passed" >> "$SAIDATA_OUTPUT_DIR/reports/processing-results.csv"
+                echo "$(date -Iseconds),$software,success,$duration,$dir_size,passed" >> "$SAIDATA_OUTPUT_DIR/reports/processing-results.csv"
             else
                 failure_count=$((failure_count + 1))
                 log_warning "$software - Generated but validation failed"
