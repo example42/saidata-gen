@@ -19,6 +19,7 @@ from saidata_gen.core.interfaces import (
 from saidata_gen.fetcher.base import HttpRepositoryFetcher, REQUESTS_AVAILABLE
 from saidata_gen.fetcher.error_handler import FetcherErrorHandler, ErrorContext
 from saidata_gen.core.system_dependency_checker import SystemDependencyChecker
+from saidata_gen.core.repository_url_manager import get_repository_url_manager
 
 # Try to import requests for error handling
 try:
@@ -79,13 +80,79 @@ class BrewFetcher(HttpRepositoryFetcher):
         self.error_handler = FetcherErrorHandler(max_retries=3, base_wait_time=1.0)
         self.dependency_checker = SystemDependencyChecker()
         
+        # Initialize repository URL manager
+        self.url_manager = get_repository_url_manager()
+        
         # Check for brew command availability (optional for API-based fetching)
         self.brew_available = self.dependency_checker.check_command_availability("brew")
         if not self.brew_available:
             logger.info("brew command not available - using API-only mode")
         
-        # Set up default repositories if none provided
-        self.repositories = repositories or [
+        # Set up repositories from URL manager or use provided ones
+        if repositories:
+            self.repositories = repositories
+        else:
+            self.repositories = self._load_repositories_from_url_manager()
+        
+        # Register fallback URLs for repositories
+        self._register_fallback_urls()
+        
+        # Initialize package cache
+        self._package_cache: Dict[str, Dict[str, Dict[str, any]]] = {}
+    
+    def _load_repositories_from_url_manager(self) -> List[BrewRepository]:
+        """
+        Load repository configurations from the repository URL manager.
+        
+        Returns:
+            List of BrewRepository objects configured from URL manager.
+        """
+        repositories = []
+        
+        try:
+            # Get URLs from the URL manager for different platforms
+            urls = self.url_manager.get_urls(provider="brew")
+            
+            # Create repositories based on available URLs
+            if 'formula_url' in urls:
+                repositories.append(BrewRepository(
+                    name="homebrew/core",
+                    url=urls['formula_url'],
+                    type="formula",
+                    platform="all"
+                ))
+            
+            if 'cask_url' in urls:
+                repositories.append(BrewRepository(
+                    name="homebrew/cask",
+                    url=urls['cask_url'],
+                    type="cask",
+                    platform="macos"
+                ))
+            
+            # Check for Linux-specific URLs
+            linux_urls = self.url_manager.get_urls(provider="brew", os_name="linux")
+            if 'formula_url' in linux_urls:
+                repositories.append(BrewRepository(
+                    name="homebrew/core-linux",
+                    url=linux_urls['formula_url'],
+                    type="formula",
+                    platform="linux"
+                ))
+            
+            if not repositories:
+                logger.warning("No URLs found for brew provider")
+                repositories = self._get_fallback_repositories()
+                
+        except Exception as e:
+            logger.error(f"Failed to load brew repositories: {e}")
+            repositories = self._get_fallback_repositories()
+        
+        return repositories
+    
+    def _get_fallback_repositories(self) -> List[BrewRepository]:
+        """Get fallback repositories if URL manager fails."""
+        return [
             BrewRepository(
                 name="homebrew/core",
                 url="https://formulae.brew.sh/api/formula.json",
@@ -98,19 +165,7 @@ class BrewFetcher(HttpRepositoryFetcher):
                 type="cask",
                 platform="macos"
             ),
-            BrewRepository(
-                name="homebrew/core-linux",
-                url="https://formulae.brew.sh/api/formula-linux.json",
-                type="formula",
-                platform="linux"
-            )
         ]
-        
-        # Register fallback URLs for repositories
-        self._register_fallback_urls()
-        
-        # Initialize package cache
-        self._package_cache: Dict[str, Dict[str, Dict[str, any]]] = {}
     
     def get_repository_name(self) -> str:
         """

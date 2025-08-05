@@ -16,6 +16,7 @@ from saidata_gen.core.interfaces import (
 from saidata_gen.fetcher.base import HttpRepositoryFetcher, REQUESTS_AVAILABLE
 from saidata_gen.fetcher.error_handler import FetcherErrorHandler, ErrorContext
 from saidata_gen.core.system_dependency_checker import SystemDependencyChecker
+from saidata_gen.core.repository_url_manager import get_repository_url_manager
 from saidata_gen.fetcher.rpm_utils import (
     fetch_primary_location, decompress_gzip_content, parse_primary_xml, parse_metalink_xml
 )
@@ -59,7 +60,7 @@ class DNFFetcher(HttpRepositoryFetcher):
         Initialize the DNF fetcher.
         
         Args:
-            distributions: List of DNF distributions to fetch. If None, uses default distributions.
+            distributions: List of DNF distributions to fetch. If None, uses default distributions from URL manager.
             config: Configuration for the fetcher.
             
         Raises:
@@ -78,6 +79,9 @@ class DNFFetcher(HttpRepositoryFetcher):
         self.error_handler = FetcherErrorHandler(max_retries=3, base_wait_time=1.0)
         self.dependency_checker = SystemDependencyChecker()
         
+        # Initialize repository URL manager
+        self.url_manager = get_repository_url_manager()
+        
         # Check for dnf/yum command availability (optional for API-based fetching)
         self.dnf_available = self.dependency_checker.check_command_availability("dnf")
         self.yum_available = self.dependency_checker.check_command_availability("yum")
@@ -85,69 +89,81 @@ class DNFFetcher(HttpRepositoryFetcher):
         if not self.dnf_available and not self.yum_available:
             logger.info("Neither dnf nor yum commands available - using API-only mode")
         
-        # Set up default distributions if none provided
-        self.distributions = distributions or [
-            DNFDistribution(
-                name="fedora",
-                version="38",
-                url="https://mirrors.fedoraproject.org/metalink?repo=fedora-38&arch=x86_64",
-                architectures=["x86_64"]
-            ),
-            DNFDistribution(
-                name="fedora",
-                version="39",
-                url="https://mirrors.fedoraproject.org/metalink?repo=fedora-39&arch=x86_64",
-                architectures=["x86_64"]
-            ),
-            DNFDistribution(
-                name="fedora",
-                version="40",
-                url="https://mirrors.fedoraproject.org/metalink?repo=fedora-40&arch=x86_64",
-                architectures=["x86_64"]
-            ),
-            DNFDistribution(
-                name="centos",
-                version="9-stream",
-                url="https://mirrors.centos.org/metalink?repo=centos-baseos-9-stream&arch=x86_64",
-                architectures=["x86_64"]
-            ),
-            DNFDistribution(
-                name="centos",
-                version="9",
-                url="https://mirrors.centos.org/metalink?repo=centos-baseos-9&arch=x86_64",
-                architectures=["x86_64"]
-            ),
-            DNFDistribution(
-                name="almalinux",
-                version="9",
-                url="https://repo.almalinux.org/almalinux/9/BaseOS/x86_64/os/",
-                architectures=["x86_64"]
-            ),
-            DNFDistribution(
-                name="almalinux",
-                version="8",
-                url="https://repo.almalinux.org/almalinux/8/BaseOS/x86_64/os/",
-                architectures=["x86_64"]
-            ),
-            DNFDistribution(
-                name="rockylinux",
-                version="9",
-                url="https://download.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/",
-                architectures=["x86_64"]
-            ),
-            DNFDistribution(
-                name="rockylinux",
-                version="8",
-                url="https://download.rockylinux.org/pub/rocky/8/BaseOS/x86_64/os/",
-                architectures=["x86_64"]
-            ),
-            # RHEL repositories removed due to authentication requirements and SSL issues
-            # Users can add their own RHEL repositories with proper authentication
-        ]
+        # Set up distributions from URL manager or use provided ones
+        if distributions:
+            self.distributions = distributions
+        else:
+            self.distributions = self._load_distributions_from_url_manager()
         
         # Initialize package cache
         self._package_cache: Dict[str, Dict[str, PackageInfo]] = {}
         self._mirror_urls: Dict[str, str] = {}
+    
+    def _load_distributions_from_url_manager(self) -> List[DNFDistribution]:
+        """
+        Load distribution configurations from the repository URL manager.
+        
+        Returns:
+            List of DNFDistribution objects configured from URL manager.
+        """
+        distributions = []
+        
+        # Define the distributions and versions to load
+        dist_configs = [
+            ("fedora", "38", ["x86_64"]),
+            ("fedora", "39", ["x86_64"]),
+            ("fedora", "40", ["x86_64"]),
+            ("centos", "9-stream", ["x86_64"]),
+            ("centos", "9", ["x86_64"]),
+            ("almalinux", "9", ["x86_64"]),
+            ("almalinux", "8", ["x86_64"]),
+            ("rockylinux", "9", ["x86_64"]),
+            ("rockylinux", "8", ["x86_64"]),
+        ]
+        
+        for os_name, version, architectures in dist_configs:
+            try:
+                # Get URLs from the URL manager
+                primary_url = self.url_manager.get_primary_url(
+                    provider="dnf",
+                    os_name=os_name,
+                    os_version=version,
+                    architecture="x86_64",
+                    context={"repo_name": f"{os_name}-{version}"}
+                )
+                
+                if primary_url:
+                    distributions.append(DNFDistribution(
+                        name=os_name,
+                        version=version,
+                        url=primary_url,
+                        architectures=architectures
+                    ))
+                else:
+                    logger.warning(f"No URL found for DNF distribution: {os_name} {version}")
+                    
+            except Exception as e:
+                logger.error(f"Failed to load DNF distribution {os_name} {version}: {e}")
+        
+        # Fallback to hardcoded distributions if URL manager fails
+        if not distributions:
+            logger.warning("Failed to load distributions from URL manager, using fallback")
+            distributions = [
+                DNFDistribution(
+                    name="fedora",
+                    version="40",
+                    url="https://mirrors.fedoraproject.org/metalink?repo=fedora-40&arch=x86_64",
+                    architectures=["x86_64"]
+                ),
+                DNFDistribution(
+                    name="centos",
+                    version="9-stream",
+                    url="https://mirrors.centos.org/metalink?repo=centos-baseos-9-stream&arch=x86_64",
+                    architectures=["x86_64"]
+                ),
+            ]
+        
+        return distributions
     
     def get_repository_name(self) -> str:
         """
@@ -534,9 +550,25 @@ class DNFFetcher(HttpRepositoryFetcher):
             return self._get_mirror_url(metalink_url)
         except Exception as e:
             logger.warning(f"Failed to get mirror URL on attempt {attempt}: {e}")
-            # For subsequent attempts, try to use a different approach or fallback
+            # For subsequent attempts, try to use fallback URLs from URL manager
             if attempt > 1:
-                # Try to construct a direct URL based on common patterns
+                # Determine OS from metalink URL
+                os_name = None
+                if "fedora" in metalink_url:
+                    os_name = "fedora"
+                elif "centos" in metalink_url:
+                    os_name = "centos"
+                
+                if os_name:
+                    fallback_urls = self.url_manager.get_fallback_urls(
+                        provider="dnf",
+                        os_name=os_name,
+                        architecture="x86_64"
+                    )
+                    if fallback_urls:
+                        return fallback_urls[0]
+                
+                # Final fallback to hardcoded URLs
                 if "fedora" in metalink_url:
                     return "https://download.fedoraproject.org/pub/fedora/linux/releases"
                 elif "centos" in metalink_url:

@@ -17,6 +17,7 @@ from saidata_gen.core.interfaces import (
     FetchResult, FetcherConfig, PackageDetails, PackageInfo, RepositoryData
 )
 from saidata_gen.fetcher.base import HttpRepositoryFetcher
+from saidata_gen.core.repository_url_manager import get_repository_url_manager
 
 
 logger = logging.getLogger(__name__)
@@ -51,46 +52,87 @@ class APTFetcher(HttpRepositoryFetcher):
         Initialize the APT fetcher.
         
         Args:
-            distributions: List of APT distributions to fetch. If None, uses default distributions.
+            distributions: List of APT distributions to fetch. If None, uses default distributions from URL manager.
             config: Configuration for the fetcher.
         """
         # Initialize with a dummy base_url, we'll use distribution-specific URLs
         super().__init__(base_url="https://example.com", config=config)
         
-        # Set up default distributions if none provided
-        self.distributions = distributions or [
-            APTDistribution(
-                name="debian",
-                version="bookworm",
-                url="https://deb.debian.org/debian/dists/bookworm",
-                components=["main"],
-                architectures=["amd64"]
-            ),
-            APTDistribution(
-                name="debian",
-                version="bullseye",
-                url="https://deb.debian.org/debian/dists/bullseye",
-                components=["main"],
-                architectures=["amd64"]
-            ),
-            APTDistribution(
-                name="ubuntu",
-                version="jammy",
-                url="http://archive.ubuntu.com/ubuntu/dists/jammy",
-                components=["main"],
-                architectures=["amd64"]
-            ),
-            APTDistribution(
-                name="ubuntu",
-                version="focal",
-                url="http://archive.ubuntu.com/ubuntu/dists/focal",
-                components=["main"],
-                architectures=["amd64"]
-            )
-        ]
+        # Initialize repository URL manager
+        self.url_manager = get_repository_url_manager()
+        
+        # Set up distributions from URL manager or use provided ones
+        if distributions:
+            self.distributions = distributions
+        else:
+            self.distributions = self._load_distributions_from_url_manager()
         
         # Initialize package cache
         self._package_cache: Dict[str, Dict[str, PackageInfo]] = {}
+    
+    def _load_distributions_from_url_manager(self) -> List[APTDistribution]:
+        """
+        Load distribution configurations from the repository URL manager.
+        
+        Returns:
+            List of APTDistribution objects configured from URL manager.
+        """
+        distributions = []
+        
+        # Define the distributions and versions to load
+        dist_configs = [
+            ("debian", "bookworm", ["main"], ["amd64"]),
+            ("debian", "bullseye", ["main"], ["amd64"]),
+            ("ubuntu", "jammy", ["main"], ["amd64"]),
+            ("ubuntu", "focal", ["main"], ["amd64"]),
+            ("ubuntu", "noble", ["main"], ["amd64"]),
+        ]
+        
+        for os_name, version, components, architectures in dist_configs:
+            try:
+                # Get URLs from the URL manager
+                primary_url = self.url_manager.get_primary_url(
+                    provider="apt",
+                    os_name=os_name,
+                    os_version=version,
+                    architecture="amd64"
+                )
+                
+                if primary_url:
+                    distributions.append(APTDistribution(
+                        name=os_name,
+                        version=version,
+                        url=primary_url,
+                        components=components,
+                        architectures=architectures
+                    ))
+                else:
+                    logger.warning(f"No URL found for APT distribution: {os_name} {version}")
+                    
+            except Exception as e:
+                logger.error(f"Failed to load APT distribution {os_name} {version}: {e}")
+        
+        # Fallback to hardcoded distributions if URL manager fails
+        if not distributions:
+            logger.warning("Failed to load distributions from URL manager, using fallback")
+            distributions = [
+                APTDistribution(
+                    name="debian",
+                    version="bookworm",
+                    url="https://deb.debian.org/debian/dists/bookworm",
+                    components=["main"],
+                    architectures=["amd64"]
+                ),
+                APTDistribution(
+                    name="ubuntu",
+                    version="jammy",
+                    url="http://archive.ubuntu.com/ubuntu/dists/jammy",
+                    components=["main"],
+                    architectures=["amd64"]
+                ),
+            ]
+        
+        return distributions
     
     def get_repository_name(self) -> str:
         """

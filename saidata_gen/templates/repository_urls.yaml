@@ -1,0 +1,504 @@
+# Repository URLs Configuration
+# This file contains all repository URLs used by fetchers with support for OS and version-specific overrides.
+# 
+# Structure:
+# - Each provider section contains default URLs and optional OS/version-specific overrides
+# - URLs support template variables like {{ software_name }}, {{ version }}, {{ arch }}
+# - OS-specific overrides are applied based on the target operating system
+# - Version-specific overrides are applied based on the OS version
+#
+# Usage:
+# - Fetchers load this configuration instead of hardcoding URLs
+# - The ConfigurationManager resolves the appropriate URL based on context
+# - Fallback URLs are provided for reliability
+#
+# Maintenance:
+# - When adding new providers, add their URL configuration here
+# - Keep URLs up to date with repository changes
+# - Test URLs regularly for availability
+
+version: 0.1
+
+# =============================================================================
+# LINUX PACKAGE MANAGERS
+# =============================================================================
+
+# APT (Advanced Package Tool) - Debian, Ubuntu, and derivatives
+apt:
+  default:
+    primary_url: "https://deb.debian.org/debian/dists/{{ version }}"
+    fallback_urls:
+      - "https://archive.debian.org/debian/dists/{{ version }}"
+      - "https://ftp.debian.org/debian/dists/{{ version }}"
+  
+  # OS-specific overrides
+  os:
+    ubuntu:
+      primary_url: "http://archive.ubuntu.com/ubuntu/dists/{{ version }}"
+      fallback_urls:
+        - "http://us.archive.ubuntu.com/ubuntu/dists/{{ version }}"
+        - "http://security.ubuntu.com/ubuntu/dists/{{ version }}"
+      
+      # Version-specific overrides for Ubuntu
+      versions:
+        jammy:  # 22.04 LTS
+          primary_url: "http://archive.ubuntu.com/ubuntu/dists/jammy"
+          security_url: "http://security.ubuntu.com/ubuntu/dists/jammy-security"
+        focal:  # 20.04 LTS
+          primary_url: "http://archive.ubuntu.com/ubuntu/dists/focal"
+          security_url: "http://security.ubuntu.com/ubuntu/dists/focal-security"
+        noble:  # 24.04 LTS
+          primary_url: "http://archive.ubuntu.com/ubuntu/dists/noble"
+          security_url: "http://security.ubuntu.com/ubuntu/dists/noble-security"
+    
+    debian:
+      primary_url: "https://deb.debian.org/debian/dists/{{ version }}"
+      fallback_urls:
+        - "https://archive.debian.org/debian/dists/{{ version }}"
+        - "https://ftp.debian.org/debian/dists/{{ version }}"
+      
+      # Version-specific overrides for Debian
+      versions:
+        bookworm:  # Debian 12
+          primary_url: "https://deb.debian.org/debian/dists/bookworm"
+          security_url: "https://security.debian.org/debian-security/dists/bookworm-security"
+        bullseye:  # Debian 11
+          primary_url: "https://deb.debian.org/debian/dists/bullseye"
+          security_url: "https://security.debian.org/debian-security/dists/bullseye-security"
+        buster:    # Debian 10
+          primary_url: "https://archive.debian.org/debian/dists/buster"
+          security_url: "https://archive.debian.org/debian-security/dists/buster/updates"
+
+# DNF (Dandified YUM) - Fedora, RHEL 8+, CentOS 8+
+dnf:
+  default:
+    metalink_url: "https://mirrors.fedoraproject.org/metalink?repo={{ repo_name }}&arch={{ arch }}"
+    fallback_urls:
+      - "https://download.fedoraproject.org/pub/fedora/linux/releases/{{ version }}/Everything/{{ arch }}/os/"
+  
+  # OS-specific overrides
+  os:
+    fedora:
+      metalink_url: "https://mirrors.fedoraproject.org/metalink?repo=fedora-{{ version }}&arch={{ arch }}"
+      fallback_urls:
+        - "https://download.fedoraproject.org/pub/fedora/linux/releases/{{ version }}/Everything/{{ arch }}/os/"
+        - "https://mirror.facebook.net/fedora/linux/releases/{{ version }}/Everything/{{ arch }}/os/"
+      
+      # Version-specific overrides for Fedora
+      versions:
+        "38":
+          metalink_url: "https://mirrors.fedoraproject.org/metalink?repo=fedora-38&arch=x86_64"
+          updates_metalink: "https://mirrors.fedoraproject.org/metalink?repo=updates-released-f38&arch=x86_64"
+        "39":
+          metalink_url: "https://mirrors.fedoraproject.org/metalink?repo=fedora-39&arch=x86_64"
+          updates_metalink: "https://mirrors.fedoraproject.org/metalink?repo=updates-released-f39&arch=x86_64"
+        "40":
+          metalink_url: "https://mirrors.fedoraproject.org/metalink?repo=fedora-40&arch=x86_64"
+          updates_metalink: "https://mirrors.fedoraproject.org/metalink?repo=updates-released-f40&arch=x86_64"
+    
+    centos:
+      metalink_url: "https://mirrors.centos.org/metalink?repo=centos-baseos-{{ version }}&arch={{ arch }}"
+      fallback_urls:
+        - "https://mirror.centos.org/centos/{{ version }}/BaseOS/{{ arch }}/os/"
+      
+      # Version-specific overrides for CentOS
+      versions:
+        "9-stream":
+          metalink_url: "https://mirrors.centos.org/metalink?repo=centos-baseos-9-stream&arch=x86_64"
+          appstream_metalink: "https://mirrors.centos.org/metalink?repo=centos-appstream-9-stream&arch=x86_64"
+        "9":
+          metalink_url: "https://mirrors.centos.org/metalink?repo=centos-baseos-9&arch=x86_64"
+          appstream_metalink: "https://mirrors.centos.org/metalink?repo=centos-appstream-9&arch=x86_64"
+    
+    almalinux:
+      primary_url: "https://repo.almalinux.org/almalinux/{{ version }}/BaseOS/{{ arch }}/os/"
+      fallback_urls:
+        - "https://mirrors.almalinux.org/almalinux/{{ version }}/BaseOS/{{ arch }}/os/"
+      
+      # Version-specific overrides for AlmaLinux
+      versions:
+        "9":
+          primary_url: "https://repo.almalinux.org/almalinux/9/BaseOS/x86_64/os/"
+          appstream_url: "https://repo.almalinux.org/almalinux/9/AppStream/x86_64/os/"
+        "8":
+          primary_url: "https://repo.almalinux.org/almalinux/8/BaseOS/x86_64/os/"
+          appstream_url: "https://repo.almalinux.org/almalinux/8/AppStream/x86_64/os/"
+    
+    rockylinux:
+      primary_url: "https://download.rockylinux.org/pub/rocky/{{ version }}/BaseOS/{{ arch }}/os/"
+      fallback_urls:
+        - "https://mirrors.rockylinux.org/mirrorlist?arch={{ arch }}&repo=BaseOS-{{ version }}"
+      
+      # Version-specific overrides for Rocky Linux
+      versions:
+        "9":
+          primary_url: "https://download.rockylinux.org/pub/rocky/9/BaseOS/x86_64/os/"
+          appstream_url: "https://download.rockylinux.org/pub/rocky/9/AppStream/x86_64/os/"
+        "8":
+          primary_url: "https://download.rockylinux.org/pub/rocky/8/BaseOS/x86_64/os/"
+          appstream_url: "https://download.rockylinux.org/pub/rocky/8/AppStream/x86_64/os/"
+
+# YUM (Yellowdog Updater Modified) - RHEL 7, CentOS 7, older Red Hat systems
+yum:
+  default:
+    primary_url: "https://mirror.centos.org/centos/{{ version }}/os/{{ arch }}/"
+    fallback_urls:
+      - "https://vault.centos.org/{{ version }}/os/{{ arch }}/"
+  
+  # OS-specific overrides
+  os:
+    centos:
+      primary_url: "https://mirror.centos.org/centos/{{ version }}/os/{{ arch }}/"
+      fallback_urls:
+        - "https://vault.centos.org/{{ version }}/os/{{ arch }}/"
+      
+      # Version-specific overrides for CentOS
+      versions:
+        "7":
+          primary_url: "https://mirror.centos.org/centos/7/os/x86_64/"
+          updates_url: "https://mirror.centos.org/centos/7/updates/x86_64/"
+          extras_url: "https://mirror.centos.org/centos/7/extras/x86_64/"
+
+# Zypper - openSUSE, SUSE Linux Enterprise
+zypper:
+  default:
+    primary_url: "https://download.opensuse.org/distribution/{{ version }}/repo/oss/"
+    fallback_urls:
+      - "https://mirrors.opensuse.org/distribution/{{ version }}/repo/oss/"
+  
+  # OS-specific overrides
+  os:
+    opensuse:
+      primary_url: "https://download.opensuse.org/distribution/{{ version }}/repo/oss/"
+      fallback_urls:
+        - "https://mirrors.opensuse.org/distribution/{{ version }}/repo/oss/"
+      
+      # Version-specific overrides for openSUSE
+      versions:
+        tumbleweed:
+          primary_url: "https://download.opensuse.org/tumbleweed/repo/oss/"
+          updates_url: "https://download.opensuse.org/update/tumbleweed/"
+        "15.5":
+          primary_url: "https://download.opensuse.org/distribution/leap/15.5/repo/oss/"
+          updates_url: "https://download.opensuse.org/update/leap/15.5/oss/"
+
+# Pacman - Arch Linux, Manjaro
+pacman:
+  default:
+    primary_url: "https://archlinux.org/packages/search/json/?name={{ software_name }}"
+    fallback_urls:
+      - "https://www.archlinux.org/packages/search/json/?name={{ software_name }}"
+  
+  # OS-specific overrides
+  os:
+    arch:
+      primary_url: "https://archlinux.org/packages/search/json/?name={{ software_name }}"
+      mirror_url: "https://geo.mirror.pkgbuild.com/"
+      fallback_urls:
+        - "https://www.archlinux.org/packages/search/json/?name={{ software_name }}"
+        - "https://mirror.rackspace.com/archlinux/"
+    
+    manjaro:
+      primary_url: "https://packages.manjaro.org/search?query={{ software_name }}"
+      fallback_urls:
+        - "https://mirror.manjaro.org/stable/"
+
+# APK (Alpine Package Keeper) - Alpine Linux
+apk:
+  default:
+    primary_url: "https://pkgs.alpinelinux.org/packages?name={{ software_name }}"
+    fallback_urls:
+      - "https://dl-cdn.alpinelinux.org/alpine/{{ version }}/main/{{ arch }}/"
+  
+  # OS-specific overrides
+  os:
+    alpine:
+      primary_url: "https://pkgs.alpinelinux.org/packages?name={{ software_name }}"
+      fallback_urls:
+        - "https://dl-cdn.alpinelinux.org/alpine/{{ version }}/main/{{ arch }}/"
+      
+      # Version-specific overrides for Alpine
+      versions:
+        "3.19":
+          primary_url: "https://pkgs.alpinelinux.org/packages?name={{ software_name }}&branch=v3.19"
+          repo_url: "https://dl-cdn.alpinelinux.org/alpine/v3.19/main/x86_64/"
+        "3.18":
+          primary_url: "https://pkgs.alpinelinux.org/packages?name={{ software_name }}&branch=v3.18"
+          repo_url: "https://dl-cdn.alpinelinux.org/alpine/v3.18/main/x86_64/"
+
+# =============================================================================
+# BSD PACKAGE MANAGERS
+# =============================================================================
+
+# PKG - FreeBSD, DragonFly BSD
+pkg:
+  default:
+    primary_url: "https://pkg.freebsd.org/FreeBSD:{{ version }}:{{ arch }}/latest"
+    fallback_urls:
+      - "https://pkg0.bbt.freebsd.org/FreeBSD:{{ version }}:{{ arch }}/latest"
+  
+  # OS-specific overrides
+  os:
+    freebsd:
+      primary_url: "https://pkg.freebsd.org/FreeBSD:{{ version }}:{{ arch }}/latest"
+      fallback_urls:
+        - "https://pkg0.bbt.freebsd.org/FreeBSD:{{ version }}:{{ arch }}/latest"
+      
+      # Version-specific overrides for FreeBSD
+      versions:
+        "13":
+          primary_url: "https://pkg.freebsd.org/FreeBSD:13:amd64/latest"
+          quarterly_url: "https://pkg.freebsd.org/FreeBSD:13:amd64/quarterly"
+        "14":
+          primary_url: "https://pkg.freebsd.org/FreeBSD:14:amd64/latest"
+          quarterly_url: "https://pkg.freebsd.org/FreeBSD:14:amd64/quarterly"
+
+# =============================================================================
+# MACOS PACKAGE MANAGERS
+# =============================================================================
+
+# Homebrew - macOS (and Linux)
+brew:
+  default:
+    api_url: "https://formulae.brew.sh/api"
+    fallback_urls:
+      - "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/api"
+  
+  # OS-specific overrides
+  os:
+    macos:
+      formula_url: "https://formulae.brew.sh/api/formula.json"
+      cask_url: "https://formulae.brew.sh/api/cask.json"
+      fallback_urls:
+        - "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/api/formula.json"
+        - "https://raw.githubusercontent.com/Homebrew/homebrew-cask/master/api/cask.json"
+    
+    linux:
+      formula_url: "https://formulae.brew.sh/api/formula-linux.json"
+      fallback_urls:
+        - "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/api/formula-linux.json"
+
+# =============================================================================
+# WINDOWS PACKAGE MANAGERS
+# =============================================================================
+
+# Windows Package Manager (winget) - Windows 10/11
+winget:
+  default:
+    primary_url: "https://github.com/microsoft/winget-pkgs.git"
+    api_url: "https://api.github.com/repos/microsoft/winget-pkgs"
+    fallback_urls:
+      - "https://raw.githubusercontent.com/microsoft/winget-pkgs/master"
+  
+  # OS-specific overrides
+  os:
+    windows:
+      primary_url: "https://github.com/microsoft/winget-pkgs.git"
+      api_url: "https://api.github.com/repos/microsoft/winget-pkgs"
+      search_url: "https://api.github.com/search/code?q={{ software_name }}+repo:microsoft/winget-pkgs"
+
+# Chocolatey - Windows
+choco:
+  default:
+    api_url: "https://community.chocolatey.org/api/v2"
+    search_url: "https://community.chocolatey.org/api/v2/Search()?$filter=IsLatestVersion&searchTerm='{{ software_name }}'"
+    fallback_urls:
+      - "https://chocolatey.org/api/v2"
+
+# Scoop - Windows
+scoop:
+  default:
+    primary_url: "https://github.com/ScoopInstaller/Main.git"
+    api_url: "https://api.github.com/repos/ScoopInstaller/Main"
+    fallback_urls:
+      - "https://raw.githubusercontent.com/ScoopInstaller/Main/master"
+
+# =============================================================================
+# UNIVERSAL/CROSS-PLATFORM PACKAGE MANAGERS
+# =============================================================================
+
+# Flatpak - Universal Linux packages
+flatpak:
+  default:
+    api_url: "https://flathub.org/api/v1"
+    search_url: "https://flathub.org/api/v1/apps/search/{{ software_name }}"
+    fallback_urls:
+      - "https://dl.flathub.org/repo"
+
+# Snap - Universal Linux packages
+snap:
+  default:
+    api_url: "https://api.snapcraft.io/v2"
+    search_url: "https://api.snapcraft.io/v2/snaps/find?name={{ software_name }}"
+    fallback_urls:
+      - "https://api.snapcraft.io/api/v1"
+
+# =============================================================================
+# FUNCTIONAL/DECLARATIVE PACKAGE MANAGERS
+# =============================================================================
+
+# Nix - NixOS and other systems
+nix:
+  default:
+    search_url: "https://search.nixos.org/packages"
+    api_url: "https://channels.nixos.org"
+    fallback_urls:
+      - "https://nixos.org/channels"
+
+# NixPkgs - Nix package collection
+nixpkgs:
+  default:
+    primary_url: "https://github.com/NixOS/nixpkgs.git"
+    api_url: "https://api.github.com/repos/NixOS/nixpkgs"
+    search_url: "https://search.nixos.org/packages?query={{ software_name }}"
+
+# GNU Guix - Functional package manager
+guix:
+  default:
+    primary_url: "https://git.savannah.gnu.org/git/guix.git"
+    packages_url: "https://packages.guix.gnu.org/packages/{{ software_name }}"
+    fallback_urls:
+      - "https://github.com/guix-mirror/guix.git"
+
+# =============================================================================
+# SCIENTIFIC/HPC PACKAGE MANAGERS
+# =============================================================================
+
+# Spack - Scientific computing package manager
+spack:
+  default:
+    primary_url: "https://github.com/spack/spack.git"
+    packages_url: "https://packages.spack.io/package.html?name={{ software_name }}"
+    api_url: "https://api.github.com/repos/spack/spack"
+
+# =============================================================================
+# LANGUAGE-SPECIFIC PACKAGE MANAGERS
+# =============================================================================
+
+# NPM - Node.js packages
+npm:
+  default:
+    registry_url: "https://registry.npmjs.org"
+    search_url: "https://registry.npmjs.org/-/v1/search?text={{ software_name }}"
+    package_url: "https://registry.npmjs.org/{{ software_name }}"
+    fallback_urls:
+      - "https://skimdb.npmjs.com/registry"
+
+# PyPI - Python packages
+pypi:
+  default:
+    api_url: "https://pypi.org/pypi"
+    search_url: "https://pypi.org/search/?q={{ software_name }}"
+    package_url: "https://pypi.org/pypi/{{ software_name }}/json"
+    fallback_urls:
+      - "https://pypi.python.org/pypi"
+
+# Cargo - Rust packages
+cargo:
+  default:
+    api_url: "https://crates.io/api/v1"
+    search_url: "https://crates.io/api/v1/crates?q={{ software_name }}"
+    package_url: "https://crates.io/api/v1/crates/{{ software_name }}"
+
+# RubyGems - Ruby packages
+gem:
+  default:
+    api_url: "https://rubygems.org/api/v1"
+    search_url: "https://rubygems.org/api/v1/search.json?query={{ software_name }}"
+    package_url: "https://rubygems.org/api/v1/gems/{{ software_name }}.json"
+
+# Go Modules - Go packages
+go:
+  default:
+    proxy_url: "https://proxy.golang.org"
+    search_url: "https://pkg.go.dev/search?q={{ software_name }}"
+    package_url: "https://pkg.go.dev/{{ software_name }}"
+
+# Composer - PHP packages
+composer:
+  default:
+    api_url: "https://packagist.org/packages"
+    search_url: "https://packagist.org/search.json?q={{ software_name }}"
+    package_url: "https://packagist.org/packages/{{ software_name }}.json"
+
+# NuGet - .NET packages
+nuget:
+  default:
+    api_url: "https://api.nuget.org/v3-flatcontainer"
+    search_url: "https://azuresearch-usnc.nuget.org/query?q={{ software_name }}"
+    package_url: "https://api.nuget.org/v3-flatcontainer/{{ software_name }}/index.json"
+
+# Maven - Java packages
+maven:
+  default:
+    central_url: "https://repo1.maven.org/maven2"
+    search_url: "https://search.maven.org/solrsearch/select?q={{ software_name }}"
+    fallback_urls:
+      - "https://repo.maven.apache.org/maven2"
+
+# Gradle - Java/Kotlin build tool and package manager
+gradle:
+  default:
+    plugins_url: "https://plugins.gradle.org/api/gradle"
+    search_url: "https://plugins.gradle.org/search?term={{ software_name }}"
+
+# =============================================================================
+# CONTAINER AND ORCHESTRATION PLATFORMS
+# =============================================================================
+
+# Docker - Container platform
+docker:
+  default:
+    registry_url: "https://registry-1.docker.io"
+    hub_url: "https://hub.docker.com/v2"
+    search_url: "https://hub.docker.com/v2/search/repositories/?query={{ software_name }}"
+    fallback_urls:
+      - "https://index.docker.io"
+
+# Helm - Kubernetes package manager
+helm:
+  default:
+    stable_url: "https://charts.helm.sh/stable"
+    bitnami_url: "https://charts.bitnami.com/bitnami"
+    fallback_urls:
+      - "https://kubernetes-charts.storage.googleapis.com"
+
+# =============================================================================
+# ADDITIONAL REPOSITORIES
+# =============================================================================
+
+# OPKG - OpenWrt, embedded systems
+opkg:
+  default:
+    primary_url: "https://downloads.openwrt.org/releases/{{ version }}/packages/{{ arch }}"
+    fallback_urls:
+      - "https://archive.openwrt.org/releases/{{ version }}/packages/{{ arch }}"
+
+# Slackpkg - Slackware Linux
+slackpkg:
+  default:
+    primary_url: "https://mirrors.slackware.com/slackware/slackware64-{{ version }}"
+    fallback_urls:
+      - "https://ftp.slackware.com/pub/slackware/slackware64-{{ version }}"
+
+# Emerge/Portage - Gentoo Linux
+emerge:
+  default:
+    primary_url: "https://packages.gentoo.org"
+    search_url: "https://packages.gentoo.org/packages/search?q={{ software_name }}"
+    rsync_url: "rsync://rsync.gentoo.org/gentoo-portage"
+
+# Portage - Gentoo Linux (alternative interface to emerge)
+portage:
+  default:
+    primary_url: "https://packages.gentoo.org"
+    search_url: "https://packages.gentoo.org/packages/search?q={{ software_name }}"
+    rsync_url: "rsync://rsync.gentoo.org/gentoo-portage"
+
+# XBPS - Void Linux
+xbps:
+  default:
+    primary_url: "https://repo-default.voidlinux.org/current"
+    search_url: "https://voidlinux.org/packages/?arch=x86_64&q={{ software_name }}"
+    fallback_urls:
+      - "https://alpha.de.repo.voidlinux.org/current"
