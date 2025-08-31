@@ -1,0 +1,20 @@
+# macOS-specific Homebrew overrides
+version: 0.1
+
+# macOS-specific directory configuration (Apple Silicon and Intel paths)
+directories:
+  config:
+    path: "/opt/homebrew/etc/{{ software_name }}"
+    group: admin
+    mode: "0644"
+  dotconf:
+    path: "/opt/homebrew/etc/{{ software_name }}/conf.d"
+  log:
+    path: "/opt/homebrew/var/log/{{ software_name }}"
+
+# macOS-specific file configuration
+files:
+  config:
+    path: "/opt/homebrew/etc/{{ software_name }}/{{ software_name }}.conf"
+  log:
+    path: "/opt/homebrew/var/log/{{ software_name }}/{{ software_name }}.log"

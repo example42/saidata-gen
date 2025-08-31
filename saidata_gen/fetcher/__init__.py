@@ -9,6 +9,7 @@ from saidata_gen.fetcher.base import (
     GitRepositoryFetcher, HttpRepositoryFetcher, RepositoryFetcher
 )
 from saidata_gen.fetcher.factory import FetcherFactory, fetcher_factory
+from saidata_gen.fetcher.error_handler import FetcherErrorHandler, ErrorContext, RetryResult
 from saidata_gen.fetcher.apt import APTFetcher, APTDistribution
 from saidata_gen.fetcher.dnf import DNFFetcher, DNFDistribution
 from saidata_gen.fetcher.yum import YumFetcher, YumDistribution
@@ -76,6 +77,9 @@ __all__ = [
     "GitRepositoryFetcher",
     "FetcherFactory",
     "fetcher_factory",
+    "FetcherErrorHandler",
+    "ErrorContext",
+    "RetryResult",
     "APTFetcher",
     "APTDistribution",
     "DNFFetcher",

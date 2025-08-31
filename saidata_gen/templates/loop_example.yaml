@@ -1,0 +1,24 @@
+# Example template with loop directives
+version: 0.1
+
+# Loop through platforms
+$for: platform in platforms
+platform_$platform:
+  supported: true
+  config_path: ${platform_paths[platform] | /etc/$software_name}
+$endfor
+
+# Loop through versions
+$for: version in versions
+version_$version:
+  download_url: "https://download.example.com/$software_name/$version"
+  release_date: ${release_dates[version] | unknown}
+$endfor
+
+# Loop through services
+$for: service in services
+service_$service:
+  name: $service
+  enabled: true
+  status: running
+$endfor

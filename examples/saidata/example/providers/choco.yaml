@@ -1,0 +1,5 @@
+# Choco specific default overrides
+version: 0.1
+
+# Example of a not supported provider for a given software.
+supported: false

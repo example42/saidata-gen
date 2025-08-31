@@ -5,7 +5,7 @@ This package provides functionality to generate, validate, and manage software m
 in YAML format following the saidata-0.1.schema.json specification.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "Saidata Generator Team"
 __email__ = "contact@saidata.org"
 

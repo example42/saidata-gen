@@ -1,0 +1,16 @@
+# Cargo Linux-specific overrides
+version: 0.1
+
+# Linux-specific directory configuration
+directories:
+  config:
+    path: "~/.cargo"
+    mode: "0755"
+  data:
+    path: "~/.cargo/bin"
+    mode: "0755"
+
+# Linux-specific file configuration
+files:
+  config:
+    path: "~/.cargo/config.toml"

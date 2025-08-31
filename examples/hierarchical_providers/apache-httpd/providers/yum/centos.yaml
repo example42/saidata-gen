@@ -1,0 +1,16 @@
+# CentOS-specific overrides for Apache HTTP Server
+version: 0.1
+
+# Package name override - Apache is called 'httpd' on CentOS
+packages:
+  default:
+    name: httpd
+
+# CentOS-specific URL
+urls:
+  yum: "https://centos.pkgs.org/httpd"
+
+# CentOS-specific repository configuration
+files:
+  repo:
+    path: "/etc/yum.repos.d/httpd.repo"

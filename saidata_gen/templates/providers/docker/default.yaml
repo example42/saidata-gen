@@ -1,0 +1,18 @@
+# Docker base configuration - common settings across all platforms
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Docker-specific container configuration
+containers:
+  upstream:
+    name: "{{ software_name }}"
+    image: "{{ software_name }}"
+    version: latest
+    network: bridge
+    ports: []
+    volumes: []
+    env: []
+
+# Docker-specific URL
+urls:
+  docker: "https://hub.docker.com/_/{{ software_name }}"

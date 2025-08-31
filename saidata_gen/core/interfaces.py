@@ -125,8 +125,8 @@ class GenerationOptions:
     Options for metadata generation.
     """
     providers: List[str] = field(default_factory=list)
-    use_rag: bool = False
-    rag_provider: str = "openai"
+    use_ai: bool = False
+    ai_provider: str = "openai"
     include_dev_packages: bool = False
     confidence_threshold: float = 0.7
     output_format: str = "yaml"
@@ -140,8 +140,8 @@ class BatchOptions:
     """
     output_dir: str = "."
     providers: List[str] = field(default_factory=list)
-    use_rag: bool = False
-    rag_provider: str = "openai"
+    use_ai: bool = False
+    ai_provider: str = "openai"
     include_dev_packages: bool = False
     confidence_threshold: float = 0.7
     output_format: str = "yaml"
@@ -219,10 +219,13 @@ class MetadataResult:
     """
     Result of metadata generation.
     """
-    metadata: SaidataMetadata
+    metadata: Optional[SaidataMetadata] = None
     file_path: Optional[str] = None
     validation_result: Optional[ValidationResult] = None
     confidence_scores: Dict[str, float] = field(default_factory=dict)
+    success: bool = True
+    software_name: Optional[str] = None
+    error_message: Optional[str] = None
 
 
 @dataclass
@@ -232,6 +235,10 @@ class BatchResult:
     """
     results: Dict[str, Union[MetadataResult, Exception]] = field(default_factory=dict)
     summary: Dict[str, int] = field(default_factory=dict)
+    total_processed: int = 0
+    successful: int = 0
+    failed: int = 0
+    errors: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -298,3 +305,42 @@ class PackageDetails:
     download_url: Optional[str] = None
     checksum: Optional[str] = None
     raw_data: Dict[str, any] = field(default_factory=dict)
+
+
+@dataclass
+class GeneratorConfig:
+    """
+    Configuration for metadata generator.
+    """
+    template_dir: str = "templates"
+    defaults_file: str = "defaults.yaml"
+    provider_templates: Dict[str, str] = field(default_factory=dict)
+    enable_rag: bool = False
+    rag_config: Optional[RAGConfig] = None
+    confidence_threshold: float = 0.7
+    merge_strategy: str = "weighted"
+
+
+@dataclass
+class SearchOptions:
+    """
+    Options for software search.
+    """
+    providers: List[str] = field(default_factory=list)
+    fuzzy_threshold: float = 0.6
+    max_results: int = 50
+    include_dev_packages: bool = False
+    exact_match_only: bool = False
+    case_sensitive: bool = False
+
+
+@dataclass
+class SearchResult:
+    """
+    Result of software search.
+    """
+    query: str
+    matches: List[SoftwareMatch] = field(default_factory=list)
+    total_results: int = 0
+    search_time: float = 0.0
+    providers_searched: List[str] = field(default_factory=list)

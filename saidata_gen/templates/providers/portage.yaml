@@ -1,0 +1,23 @@
+# Portage (Gentoo) provider template
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Gentoo-specific service configuration (OpenRC-based)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Gentoo-specific directory configuration
+directories:
+  config:
+    mode: "0644"
+
+# Gentoo-specific file configuration
+files:
+  init:
+    path: "/etc/conf.d/{{ software_name }}"
+
+# Portage-specific URL
+urls:
+  portage: "https://packages.gentoo.org/packages/{{ software_name }}"

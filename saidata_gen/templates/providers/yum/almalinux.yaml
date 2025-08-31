@@ -1,0 +1,14 @@
+# AlmaLinux-specific YUM overrides
+version: 0.1
+
+# AlmaLinux-specific URL
+urls:
+  yum: "https://repo.almalinux.org/almalinux/{{ software_name }}"
+
+# AlmaLinux-specific repository configuration
+files:
+  repo:
+    path: "/etc/yum.repos.d/{{ software_name }}.repo"
+    owner: root
+    group: root
+    mode: "0644"

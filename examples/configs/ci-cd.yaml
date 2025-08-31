@@ -1,0 +1,89 @@
+# CI/CD Pipeline Configuration for Saidata Generator
+# Optimized for automated environments and batch processing
+
+# Core settings
+cache:
+  directory: "${SAIDATA_CACHE_DIR:-./cache}"
+  ttl: 1800  # 30 minutes for CI/CD
+  max_size: "500MB"
+  cleanup_on_exit: true
+
+# Repository fetcher configuration
+fetcher:
+  concurrent_requests: 5
+  request_timeout: 45
+  retry_count: 3
+  retry_delay: 1
+  enabled_providers:
+    - apt
+    - brew
+    - pypi
+    - npm
+    - docker
+
+# Generation settings
+generation:
+  output_format: "${SAIDATA_OUTPUT_FORMAT:-yaml}"
+  validate_schema: true
+  confidence_threshold: 0.7
+  include_dev_packages: false
+  parallel_processing: true
+  max_workers: 4
+  fail_fast: false  # Continue processing even if some packages fail
+
+# Batch processing settings
+batch:
+  chunk_size: 10
+  progress_reporting: true
+  summary_report: true
+  error_tolerance: 0.2  # Allow 20% failures
+  output_directory: "${SAIDATA_OUTPUT_DIR:-./output}"
+
+# Logging configuration
+logging:
+  level: "${SAIDATA_LOG_LEVEL:-INFO}"
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+  file: "${SAIDATA_LOG_FILE:-saidata-gen.log}"
+  console_output: true
+
+# Environment variable configuration
+environment:
+  variables:
+    - SAIDATA_CACHE_DIR
+    - SAIDATA_OUTPUT_DIR
+    - SAIDATA_OUTPUT_FORMAT
+    - SAIDATA_LOG_LEVEL
+    - SAIDATA_LOG_FILE
+    - SAIDATA_PROVIDERS
+    - SAIDATA_CONFIDENCE_THRESHOLD
+
+# Exit codes for CI/CD integration
+exit_codes:
+  success: 0
+  partial_failure: 1  # Some packages failed but within tolerance
+  validation_error: 2
+  configuration_error: 3
+  network_error: 4
+  critical_failure: 5
+
+# Quality settings for CI/CD
+quality:
+  min_confidence_score: 0.6
+  cross_reference_validation: false  # Disabled for speed
+  source_attribution: true
+  required_fields:
+    - description
+    - packages
+
+# Performance optimizations for CI/CD
+performance:
+  connection_pool_size: 10
+  memory_limit: "1GB"
+  timeout_aggressive: true
+  skip_optional_fields: true
+
+# Template settings
+templates:
+  use_defaults: true
+  custom_templates_dir: null
+  minimal_output: true  # Reduce output size

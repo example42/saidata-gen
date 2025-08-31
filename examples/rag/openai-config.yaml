@@ -1,0 +1,127 @@
+# OpenAI RAG Configuration for Saidata Generator
+# Configuration for using OpenAI models for enhanced metadata generation
+
+# RAG Engine Configuration
+rag:
+  enabled: true
+  provider: "openai"
+  
+  # OpenAI-specific settings
+  openai:
+    api_key: "${OPENAI_API_KEY}"  # Set via environment variable
+    model: "gpt-4"
+    base_url: null  # Use default OpenAI API
+    organization: null  # Optional organization ID
+    
+    # Model parameters
+    temperature: 0.1  # Low temperature for consistent results
+    max_tokens: 2000
+    top_p: 0.9
+    frequency_penalty: 0.0
+    presence_penalty: 0.0
+    
+    # Request settings
+    timeout: 60
+    max_retries: 3
+    retry_delay: 2
+
+  # Fallback configuration
+  fallback:
+    enabled: true
+    use_traditional_sources: true
+    confidence_threshold: 0.5
+
+  # Enhancement settings
+  enhancement:
+    description_enhancement: true
+    categorization: true
+    missing_field_completion: true
+    url_validation: true
+    license_normalization: true
+
+  # Confidence scoring
+  confidence:
+    ai_generated_content: 0.8
+    enhanced_descriptions: 0.9
+    auto_categorization: 0.7
+    filled_missing_fields: 0.6
+
+# Prompt templates for different tasks
+prompts:
+  description_enhancement: |
+    You are a software metadata expert. Given the following basic information about a software package, 
+    enhance the description to be more comprehensive and informative while maintaining accuracy.
+    
+    Software: {software_name}
+    Basic Info: {basic_info}
+    
+    Provide a clear, concise description that explains:
+    1. What the software does
+    2. Its primary use cases
+    3. Key features or capabilities
+    
+    Keep the description under 200 words and focus on factual information.
+
+  categorization: |
+    Analyze the following software package and assign appropriate categories.
+    
+    Software: {software_name}
+    Description: {description}
+    Package Info: {package_info}
+    
+    Provide categorization in this format:
+    - Primary Category: [main category]
+    - Subcategory: [specific subcategory]
+    - Tags: [comma-separated relevant tags]
+    
+    Use standard software categories like: Development, System, Network, Security, 
+    Multimedia, Office, Games, Education, etc.
+
+  missing_fields: |
+    You are helping complete metadata for a software package. Based on the existing information,
+    suggest values for missing fields. Only suggest values you are confident about.
+    
+    Software: {software_name}
+    Existing Data: {existing_data}
+    Missing Fields: {missing_fields}
+    
+    For each missing field, provide:
+    - Field name
+    - Suggested value
+    - Confidence level (high/medium/low)
+    - Reasoning
+    
+    If you cannot confidently suggest a value, indicate "insufficient information".
+
+# Quality control for RAG outputs
+quality_control:
+  max_description_length: 500
+  required_description_elements:
+    - purpose
+    - functionality
+  
+  category_validation:
+    allowed_primary_categories:
+      - Development
+      - System
+      - Network
+      - Security
+      - Multimedia
+      - Office
+      - Games
+      - Education
+      - Utilities
+      - Server
+      - Database
+      - Web
+    
+  url_validation:
+    check_accessibility: false  # Don't check URLs in RAG mode
+    validate_format: true
+
+# Cost management
+cost_management:
+  max_tokens_per_request: 2000
+  max_requests_per_minute: 60
+  daily_token_limit: 100000
+  cost_tracking: true

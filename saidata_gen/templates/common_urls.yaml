@@ -1,0 +1,9 @@
+# Common URLs template for inclusion
+urls:
+  documentation: https://docs.example.com/$software_name
+  issues: https://github.com/example/$software_name/issues
+  source: https://github.com/example/$software_name
+  
+$if: exists license
+license: ${license | MIT}
+$endif

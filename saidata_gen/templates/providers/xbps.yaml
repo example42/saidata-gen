@@ -1,0 +1,23 @@
+# XBPS (Void Linux) provider template
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Void Linux specific service configuration (runit-based)
+services:
+  default:
+    enabled: true
+    status: enabled
+
+# Void Linux specific directory configuration
+directories:
+  config:
+    mode: "0644"
+
+# Void Linux specific file configuration
+files:
+  init:
+    path: "/etc/sv/{{ software_name }}/conf"
+
+# XBPS-specific URL
+urls:
+  xbps: "https://voidlinux.org/packages/?arch=x86_64&q={{ software_name }}"

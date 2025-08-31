@@ -20,6 +20,7 @@ try:
     import requests
     from requests.adapters import HTTPAdapter
     from urllib3.util.retry import Retry
+    import ssl
     REQUESTS_AVAILABLE = True
 except ImportError:
     REQUESTS_AVAILABLE = False
@@ -44,6 +45,15 @@ except ImportError:
         class exceptions:
             class RequestException(Exception):
                 pass
+            class SSLError(Exception):
+                pass
+            class ConnectionError(Exception):
+                pass
+            class Timeout(Exception):
+                pass
+    class ssl:
+        class SSLError(Exception):
+            pass
 
 # Try to import tenacity, but don't fail if it's not available
 try:
@@ -97,11 +107,69 @@ class RepositoryFetcher(abc.ABC):
         
         # Create a session with retry logic
         self.session = self._create_session()
+        
+        # Track SSL issues for fallback handling
+        self._ssl_failed_urls = set()
+        self._fallback_urls = {}
+    
+    def register_fallback_urls(self, primary_url: str, fallback_urls: List[str]) -> None:
+        """
+        Register fallback URLs for a primary URL.
+        
+        Args:
+            primary_url: The primary URL.
+            fallback_urls: List of fallback URLs to try if the primary fails.
+        """
+        self._fallback_urls[primary_url] = fallback_urls
+        logger.debug(f"Registered {len(fallback_urls)} fallback URLs for {primary_url}")
+    
+    def get_fallback_urls(self, primary_url: str) -> List[str]:
+        """
+        Get fallback URLs for a primary URL.
+        
+        Args:
+            primary_url: The primary URL.
+            
+        Returns:
+            List of fallback URLs, or empty list if none registered.
+        """
+        return self._fallback_urls.get(primary_url, [])
     
     def _create_session(self) -> requests.Session:
         """
-        Create a requests session with retry logic.
+        Create a requests session with enhanced retry logic and SSL handling.
         
+        Returns:
+            A configured requests session.
+        """
+        session = requests.Session()
+        
+        # Configure retry strategy - don't retry on SSL errors initially
+        retry_strategy = Retry(
+            total=self.config.retry_count,
+            backoff_factor=0.5,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["GET", "HEAD"],
+            # Don't retry on SSL errors in the adapter - we'll handle them manually
+            raise_on_status=False
+        )
+        
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        
+        # Set reasonable timeout
+        session.timeout = 30
+        
+        return session
+    
+    def _create_session_with_ssl_fallback(self, verify_ssl: bool = True) -> requests.Session:
+        """
+        Create a requests session with SSL fallback handling.
+        
+        Args:
+            verify_ssl: Whether to verify SSL certificates.
+            
         Returns:
             A configured requests session.
         """
@@ -112,13 +180,25 @@ class RepositoryFetcher(abc.ABC):
             total=self.config.retry_count,
             backoff_factor=0.5,
             status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["GET", "HEAD"]
+            allowed_methods=["GET", "HEAD"],
+            raise_on_status=False
         )
         
         adapter = HTTPAdapter(max_retries=retry_strategy)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
         
+        # Configure SSL verification
+        session.verify = verify_ssl
+        if not verify_ssl:
+            # Disable SSL warnings when verification is disabled
+            try:
+                import urllib3
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            except ImportError:
+                pass
+        
+        session.timeout = 30
         return session
     
     @abc.abstractmethod
@@ -241,18 +321,15 @@ class RepositoryFetcher(abc.ABC):
         except Exception as e:
             logger.warning(f"Failed to write cache for {key}: {e}")
     
-    @retry(
-        retry=retry_if_exception_type((requests.exceptions.RequestException, IOError)),
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-    )
-    def _fetch_url(self, url: str, headers: Optional[Dict[str, str]] = None) -> requests.Response:
+    def _fetch_url(self, url: str, headers: Optional[Dict[str, str]] = None, 
+                   fallback_urls: Optional[List[str]] = None) -> requests.Response:
         """
-        Fetch data from a URL with retry logic.
+        Fetch data from a URL with enhanced retry logic and SSL fallback handling.
         
         Args:
             url: URL to fetch.
             headers: Optional headers to include in the request.
+            fallback_urls: Optional list of fallback URLs to try if the primary URL fails.
             
         Returns:
             Response object.
@@ -261,13 +338,108 @@ class RepositoryFetcher(abc.ABC):
             requests.exceptions.RequestException: If the request fails after retries.
         """
         headers = headers or {}
+        fallback_urls = fallback_urls or []
+        
+        # Try the primary URL first
+        urls_to_try = [url] + fallback_urls
+        
+        for attempt, current_url in enumerate(urls_to_try):
+            try:
+                return self._fetch_url_with_retries(current_url, headers, attempt + 1)
+            except (requests.exceptions.SSLError, ssl.SSLError) as e:
+                logger.warning(f"SSL error for {current_url}: {e}")
+                self._ssl_failed_urls.add(current_url)
+                
+                # Try with SSL verification disabled as fallback
+                try:
+                    return self._fetch_url_with_ssl_fallback(current_url, headers)
+                except Exception as ssl_fallback_error:
+                    logger.warning(f"SSL fallback also failed for {current_url}: {ssl_fallback_error}")
+                    if attempt == len(urls_to_try) - 1:  # Last URL
+                        raise e
+                    continue
+                    
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+                logger.warning(f"Network error for {current_url}: {e}")
+                if attempt == len(urls_to_try) - 1:  # Last URL
+                    raise e
+                continue
+                
+            except requests.exceptions.RequestException as e:
+                logger.warning(f"Request error for {current_url}: {e}")
+                if attempt == len(urls_to_try) - 1:  # Last URL
+                    raise e
+                continue
+        
+        # This should not be reached, but just in case
+        raise requests.exceptions.RequestException(f"All URLs failed: {urls_to_try}")
+    
+    @retry(
+        retry=retry_if_exception_type((
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.HTTPError
+        )),
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+    )
+    def _fetch_url_with_retries(self, url: str, headers: Dict[str, str], 
+                               attempt: int = 1) -> requests.Response:
+        """
+        Fetch data from a URL with exponential backoff retry logic.
+        
+        Args:
+            url: URL to fetch.
+            headers: Headers to include in the request.
+            attempt: Current attempt number (for progressive timeout).
+            
+        Returns:
+            Response object.
+            
+        Raises:
+            requests.exceptions.RequestException: If the request fails after retries.
+        """
+        # Progressive timeout - increase timeout with each attempt
+        timeout = self.config.request_timeout + (attempt - 1) * 10
+        
         response = self.session.get(
             url,
             headers=headers,
-            timeout=self.config.request_timeout
+            timeout=timeout
         )
         response.raise_for_status()
         return response
+    
+    def _fetch_url_with_ssl_fallback(self, url: str, headers: Dict[str, str]) -> requests.Response:
+        """
+        Fetch data from a URL with SSL verification disabled as fallback.
+        
+        Args:
+            url: URL to fetch.
+            headers: Headers to include in the request.
+            
+        Returns:
+            Response object.
+            
+        Raises:
+            requests.exceptions.RequestException: If the request fails.
+        """
+        logger.warning(f"Attempting SSL fallback for {url} (SSL verification disabled)")
+        
+        # Create a session with SSL verification disabled
+        fallback_session = self._create_session_with_ssl_fallback(verify_ssl=False)
+        
+        try:
+            response = fallback_session.get(
+                url,
+                headers=headers,
+                timeout=self.config.request_timeout
+            )
+            response.raise_for_status()
+            logger.info(f"SSL fallback successful for {url}")
+            return response
+        finally:
+            fallback_session.close()
 
 
 class HttpRepositoryFetcher(RepositoryFetcher):
@@ -282,7 +454,8 @@ class HttpRepositoryFetcher(RepositoryFetcher):
         self,
         base_url: str,
         config: Optional[FetcherConfig] = None,
-        headers: Optional[Dict[str, str]] = None
+        headers: Optional[Dict[str, str]] = None,
+        fallback_base_urls: Optional[List[str]] = None
     ):
         """
         Initialize the HTTP repository fetcher.
@@ -291,10 +464,12 @@ class HttpRepositoryFetcher(RepositoryFetcher):
             base_url: Base URL for the repository.
             config: Configuration for the fetcher.
             headers: Optional headers to include in all requests.
+            fallback_base_urls: Optional list of fallback base URLs.
         """
         super().__init__(config)
         self.base_url = base_url.rstrip('/')
         self.headers = headers or {}
+        self.fallback_base_urls = [url.rstrip('/') for url in (fallback_base_urls or [])]
     
     def _get_url(self, path: str) -> str:
         """
@@ -309,13 +484,15 @@ class HttpRepositoryFetcher(RepositoryFetcher):
         path = path.lstrip('/')
         return f"{self.base_url}/{path}"
     
-    def _fetch_json(self, path: str, use_cache: bool = True) -> Dict[str, Any]:
+    def _fetch_json(self, path: str, use_cache: bool = True, 
+                    fallback_urls: Optional[List[str]] = None) -> Dict[str, Any]:
         """
-        Fetch JSON data from a URL.
+        Fetch JSON data from a URL with fallback support.
         
         Args:
             path: Path to append to the base URL.
             use_cache: Whether to use the cache.
+            fallback_urls: Optional list of fallback URLs to try.
             
         Returns:
             Parsed JSON data.
@@ -332,21 +509,37 @@ class HttpRepositoryFetcher(RepositoryFetcher):
             if cached_data is not None:
                 return cached_data
         
-        response = self._fetch_url(url, headers=self.headers)
-        data = response.json()
+        # Combine provided fallback URLs with base URL fallbacks
+        all_fallback_urls = fallback_urls or []
+        if self.fallback_base_urls:
+            for fallback_base in self.fallback_base_urls:
+                fallback_url = f"{fallback_base}/{path.lstrip('/')}"
+                all_fallback_urls.append(fallback_url)
+        
+        response = self._fetch_url(url, headers=self.headers, fallback_urls=all_fallback_urls)
+        
+        try:
+            data = response.json()
+        except ValueError as e:
+            logger.error(f"Failed to parse JSON from {url}: {e}")
+            # Try to provide more context about the response
+            logger.debug(f"Response content (first 500 chars): {response.text[:500]}")
+            raise
         
         if use_cache:
             self._save_to_cache(cache_key, data)
         
         return data
     
-    def _fetch_text(self, path: str, use_cache: bool = True) -> str:
+    def _fetch_text(self, path: str, use_cache: bool = True, 
+                    fallback_urls: Optional[List[str]] = None) -> str:
         """
-        Fetch text data from a URL.
+        Fetch text data from a URL with fallback support.
         
         Args:
             path: Path to append to the base URL.
             use_cache: Whether to use the cache.
+            fallback_urls: Optional list of fallback URLs to try.
             
         Returns:
             Text data.
@@ -362,7 +555,14 @@ class HttpRepositoryFetcher(RepositoryFetcher):
             if cached_data is not None and "text" in cached_data:
                 return cached_data["text"]
         
-        response = self._fetch_url(url, headers=self.headers)
+        # Combine provided fallback URLs with base URL fallbacks
+        all_fallback_urls = fallback_urls or []
+        if self.fallback_base_urls:
+            for fallback_base in self.fallback_base_urls:
+                fallback_url = f"{fallback_base}/{path.lstrip('/')}"
+                all_fallback_urls.append(fallback_url)
+        
+        response = self._fetch_url(url, headers=self.headers, fallback_urls=all_fallback_urls)
         text = response.text
         
         if use_cache:
@@ -370,14 +570,16 @@ class HttpRepositoryFetcher(RepositoryFetcher):
         
         return text
     
-    def _fetch_binary(self, path: str, output_path: str, use_cache: bool = True) -> str:
+    def _fetch_binary(self, path: str, output_path: str, use_cache: bool = True, 
+                      fallback_urls: Optional[List[str]] = None) -> str:
         """
-        Fetch binary data from a URL and save it to a file.
+        Fetch binary data from a URL and save it to a file with fallback support.
         
         Args:
             path: Path to append to the base URL.
             output_path: Path to save the binary data to.
             use_cache: Whether to use the cache.
+            fallback_urls: Optional list of fallback URLs to try.
             
         Returns:
             Path to the saved file.
@@ -396,8 +598,15 @@ class HttpRepositoryFetcher(RepositoryFetcher):
             if self._is_cache_valid(output_path):
                 return output_path
         
+        # Combine provided fallback URLs with base URL fallbacks
+        all_fallback_urls = fallback_urls or []
+        if self.fallback_base_urls:
+            for fallback_base in self.fallback_base_urls:
+                fallback_url = f"{fallback_base}/{path.lstrip('/')}"
+                all_fallback_urls.append(fallback_url)
+        
         # Fetch the data
-        response = self._fetch_url(url, headers=self.headers)
+        response = self._fetch_url(url, headers=self.headers, fallback_urls=all_fallback_urls)
         
         # Save the data to the file
         with open(output_path, 'wb') as f:

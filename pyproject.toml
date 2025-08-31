@@ -4,23 +4,48 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "saidata-gen"
-version = "0.1.0"
-description = "Standalone saidata YAML generator for software metadata"
+version = "0.2.0"
+description = "Standalone saidata YAML generator for software metadata with AI-enhanced capabilities"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {file = "LICENSE"}
 authors = [
-    {name = "SAI Team"}
+    {name = "SAI Team", email = "team@sai.dev"}
+]
+maintainers = [
+    {name = "SAI Team", email = "team@sai.dev"}
+]
+keywords = [
+    "saidata",
+    "metadata",
+    "yaml",
+    "package-manager",
+    "software-inventory",
+    "devops",
+    "automation",
+    "ai",
+    "rag",
+    "machine-learning"
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Information Technology",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Software Distribution",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+    "Environment :: Console",
+    "Typing :: Typed",
 ]
 dependencies = [
     "pyyaml>=6.0",
@@ -55,7 +80,11 @@ dev = [
 
 [project.urls]
 "Homepage" = "https://github.com/sai/saidata-gen"
+"Documentation" = "https://github.com/sai/saidata-gen/blob/main/README.md"
+"Repository" = "https://github.com/sai/saidata-gen"
 "Bug Tracker" = "https://github.com/sai/saidata-gen/issues"
+"Changelog" = "https://github.com/sai/saidata-gen/blob/main/CHANGELOG.md"
+"Funding" = "https://github.com/sponsors/sai"
 
 [project.scripts]
 saidata-gen = "saidata_gen.cli.main:main"
@@ -72,7 +101,7 @@ profile = "black"
 line_length = 100
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "0.2.0"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

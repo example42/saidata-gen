@@ -17,6 +17,15 @@ from saidata_gen.core.interfaces import (
     FetchResult, FetcherConfig, PackageDetails, PackageInfo, RepositoryData
 )
 from saidata_gen.fetcher.base import HttpRepositoryFetcher
+from saidata_gen.fetcher.error_handler import FetcherErrorHandler, ErrorContext
+from saidata_gen.core.system_dependency_checker import SystemDependencyChecker
+
+# Try to import requests for error handling
+try:
+    import requests
+    import ssl
+except ImportError:
+    pass
 
 
 logger = logging.getLogger(__name__)
@@ -65,6 +74,15 @@ class ChocoFetcher(HttpRepositoryFetcher):
             config=config,
             headers={"Accept": "application/json"}
         )
+        
+        # Initialize error handler and system dependency checker
+        self.error_handler = FetcherErrorHandler(max_retries=3, base_wait_time=1.0)
+        self.dependency_checker = SystemDependencyChecker()
+        
+        # Check for choco command availability (optional for API-based fetching)
+        self.choco_available = self.dependency_checker.check_command_availability("choco")
+        if not self.choco_available:
+            self.dependency_checker.log_missing_dependency("choco", "choco")
         
         # Initialize package cache
         self._package_cache: Dict[str, Dict[str, Dict[str, any]]] = {}

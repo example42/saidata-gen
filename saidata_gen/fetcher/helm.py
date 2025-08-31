@@ -69,6 +69,19 @@ class HelmFetcher(HttpRepositoryFetcher):
             config=config
         )
         
+        # Import and initialize error handler and system dependency checker
+        from saidata_gen.fetcher.error_handler import FetcherErrorHandler, ErrorContext
+        from saidata_gen.core.system_dependency_checker import SystemDependencyChecker
+        
+        # Initialize error handler and system dependency checker
+        self.error_handler = FetcherErrorHandler(max_retries=3, base_wait_time=1.0)
+        self.dependency_checker = SystemDependencyChecker()
+        
+        # Check for helm command availability (optional for API-based fetching)
+        self.helm_available = self.dependency_checker.check_command_availability("helm")
+        if not self.helm_available:
+            self.dependency_checker.log_missing_dependency("helm", "helm")
+        
         # Initialize chart cache
         self._chart_cache: Dict[str, Dict[str, Dict[str, any]]] = {}
     

@@ -1,0 +1,13 @@
+# Nix base configuration - common settings across all platforms
+# Only includes configurations that differ from defaults.yaml
+version: 0.1
+
+# Nix-specific package configuration
+packages:
+  default:
+    name: "{{ software_name }}"
+    version: latest
+
+# Nix-specific URL
+urls:
+  nix: "https://search.nixos.org/packages?query={{ software_name }}"

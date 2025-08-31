@@ -17,6 +17,16 @@ from saidata_gen.core.interfaces import (
     FetchResult, FetcherConfig, PackageDetails, PackageInfo, RepositoryData
 )
 from saidata_gen.fetcher.base import HttpRepositoryFetcher, REQUESTS_AVAILABLE
+from saidata_gen.fetcher.error_handler import FetcherErrorHandler, ErrorContext
+from saidata_gen.core.system_dependency_checker import SystemDependencyChecker
+from saidata_gen.core.repository_url_manager import get_repository_url_manager
+
+# Try to import requests for error handling
+try:
+    import requests
+    import ssl
+except ImportError:
+    pass
 
 
 logger = logging.getLogger(__name__)
@@ -66,8 +76,83 @@ class BrewFetcher(HttpRepositoryFetcher):
         # Initialize with a dummy base_url, we'll use repository-specific URLs
         super().__init__(base_url="https://example.com", config=config)
         
-        # Set up default repositories if none provided
-        self.repositories = repositories or [
+        # Initialize error handler and system dependency checker
+        self.error_handler = FetcherErrorHandler(max_retries=3, base_wait_time=1.0)
+        self.dependency_checker = SystemDependencyChecker()
+        
+        # Initialize repository URL manager
+        self.url_manager = get_repository_url_manager()
+        
+        # Check for brew command availability (optional for API-based fetching)
+        self.brew_available = self.dependency_checker.check_command_availability("brew")
+        if not self.brew_available:
+            logger.info("brew command not available - using API-only mode")
+        
+        # Set up repositories from URL manager or use provided ones
+        if repositories:
+            self.repositories = repositories
+        else:
+            self.repositories = self._load_repositories_from_url_manager()
+        
+        # Register fallback URLs for repositories
+        self._register_fallback_urls()
+        
+        # Initialize package cache
+        self._package_cache: Dict[str, Dict[str, Dict[str, any]]] = {}
+    
+    def _load_repositories_from_url_manager(self) -> List[BrewRepository]:
+        """
+        Load repository configurations from the repository URL manager.
+        
+        Returns:
+            List of BrewRepository objects configured from URL manager.
+        """
+        repositories = []
+        
+        try:
+            # Get URLs from the URL manager for different platforms
+            urls = self.url_manager.get_urls(provider="brew")
+            
+            # Create repositories based on available URLs
+            if 'formula_url' in urls:
+                repositories.append(BrewRepository(
+                    name="homebrew/core",
+                    url=urls['formula_url'],
+                    type="formula",
+                    platform="all"
+                ))
+            
+            if 'cask_url' in urls:
+                repositories.append(BrewRepository(
+                    name="homebrew/cask",
+                    url=urls['cask_url'],
+                    type="cask",
+                    platform="macos"
+                ))
+            
+            # Check for Linux-specific URLs
+            linux_urls = self.url_manager.get_urls(provider="brew", os_name="linux")
+            if 'formula_url' in linux_urls:
+                repositories.append(BrewRepository(
+                    name="homebrew/core-linux",
+                    url=linux_urls['formula_url'],
+                    type="formula",
+                    platform="linux"
+                ))
+            
+            if not repositories:
+                logger.warning("No URLs found for brew provider")
+                repositories = self._get_fallback_repositories()
+                
+        except Exception as e:
+            logger.error(f"Failed to load brew repositories: {e}")
+            repositories = self._get_fallback_repositories()
+        
+        return repositories
+    
+    def _get_fallback_repositories(self) -> List[BrewRepository]:
+        """Get fallback repositories if URL manager fails."""
+        return [
             BrewRepository(
                 name="homebrew/core",
                 url="https://formulae.brew.sh/api/formula.json",
@@ -80,16 +165,7 @@ class BrewFetcher(HttpRepositoryFetcher):
                 type="cask",
                 platform="macos"
             ),
-            BrewRepository(
-                name="homebrew/core-linux",
-                url="https://formulae.brew.sh/api/formula-linux.json",
-                type="formula",
-                platform="linux"
-            )
         ]
-        
-        # Initialize package cache
-        self._package_cache: Dict[str, Dict[str, Dict[str, any]]] = {}
     
     def get_repository_name(self) -> str:
         """
@@ -111,46 +187,21 @@ class BrewFetcher(HttpRepositoryFetcher):
         
         for repo in self.repositories:
             repo_key = f"{repo.name}_{repo.type}"
-            try:
-                # Check if we have a valid cache
-                cached_data = self._get_from_cache(repo_key)
-                if cached_data:
-                    self._package_cache[repo_key] = cached_data
-                    result.cache_hits[repo_key] = True
-                    continue
-                
-                # Fetch the repository data
-                try:
-                    # Save the current base_url
-                    original_base_url = self.base_url
-                    
-                    try:
-                        # Set the base_url for this request to the repository URL's base
-                        self.base_url = "/".join(repo.url.split("/")[:-1])
-                        
-                        # Fetch the JSON data
-                        response = self._fetch_url(repo.url)
-                        data = response.json()
-                        
-                        # Process the data based on the repository type
-                        packages_data = self._process_repository_data(data, repo.type)
-                        
-                        self._package_cache[repo_key] = packages_data
-                        self._save_to_cache(repo_key, packages_data)
-                        result.providers[repo_key] = True
-                    finally:
-                        # Restore the original base_url
-                        self.base_url = original_base_url
-                        
-                except Exception as e:
-                    logger.error(f"Failed to fetch repository data for {repo_key}: {e}")
-                    result.errors[repo_key] = str(e)
-                    result.providers[repo_key] = False
-                    result.success = False
             
-            except Exception as e:
-                logger.error(f"Failed to fetch repository data for {repo_key}: {e}")
-                result.errors[repo_key] = str(e)
+            # Check if we have a valid cache
+            cached_data = self._get_from_cache(repo_key)
+            if cached_data:
+                self._package_cache[repo_key] = cached_data
+                result.cache_hits[repo_key] = True
+                continue
+            
+            # Fetch the repository data with enhanced error handling
+            fetch_result = self._fetch_repository_with_retries(repo, repo_key)
+            
+            if fetch_result.success:
+                result.providers[repo_key] = True
+            else:
+                result.errors[repo_key] = fetch_result.errors.get(repo_key, "Unknown error")
                 result.providers[repo_key] = False
                 result.success = False
         
@@ -325,6 +376,15 @@ class BrewFetcher(HttpRepositoryFetcher):
             if not name:
                 continue
             
+            # Ensure name is a string (not a list)
+            if isinstance(name, list):
+                if len(name) > 0:
+                    name = str(name[0])
+                else:
+                    continue
+            else:
+                name = str(name)
+            
             # Add repository type to the data
             item["brew_type"] = repo_type
             
@@ -333,11 +393,21 @@ class BrewFetcher(HttpRepositoryFetcher):
             
             # Also add by full_name if available and different from name
             full_name = item.get("full_name")
-            if full_name and full_name != name and full_name not in result:
-                # Create a copy with the same data but different name
-                full_name_item = item.copy()
-                full_name_item["name"] = full_name
-                result[full_name] = full_name_item
+            if full_name:
+                # Ensure full_name is a string (not a list)
+                if isinstance(full_name, list):
+                    if len(full_name) > 0:
+                        full_name = str(full_name[0])
+                    else:
+                        full_name = None
+                else:
+                    full_name = str(full_name)
+                
+                if full_name and full_name != name and full_name not in result:
+                    # Create a copy with the same data but different name
+                    full_name_item = item.copy()
+                    full_name_item["name"] = full_name
+                    result[full_name] = full_name_item
         
         return result
     
@@ -412,3 +482,196 @@ class BrewFetcher(HttpRepositoryFetcher):
         finally:
             # Restore the original base_url
             self.base_url = original_base_url
+    
+    def _register_fallback_urls(self) -> None:
+        """Register fallback URLs for Homebrew repositories."""
+        # Register fallback URLs for the main API endpoints
+        fallback_urls = [
+            "https://raw.githubusercontent.com/Homebrew/homebrew-core/master/api/formula.json",
+            "https://raw.githubusercontent.com/Homebrew/homebrew-cask/master/api/cask.json"
+        ]
+        
+        for repo in self.repositories:
+            if "formulae.brew.sh" in repo.url:
+                self.register_fallback_urls(repo.url, fallback_urls)
+    
+    def _fetch_repository_with_retries(self, repo: BrewRepository, repo_key: str) -> FetchResult:
+        """
+        Fetch repository data with enhanced error handling and retries.
+        
+        Args:
+            repo: Repository configuration.
+            repo_key: Repository cache key.
+            
+        Returns:
+            FetchResult with the outcome.
+        """
+        max_attempts = 3
+        
+        for attempt in range(1, max_attempts + 1):
+            try:
+                # Save the current base_url
+                original_base_url = self.base_url
+                
+                try:
+                    # Set the base_url for this request to the repository URL's base
+                    self.base_url = "/".join(repo.url.split("/")[:-1])
+                    
+                    # Create error context
+                    context = ErrorContext(
+                        provider="brew",
+                        url=repo.url,
+                        attempt=attempt,
+                        max_attempts=max_attempts,
+                        additional_info={"repository": repo.name, "type": repo.type}
+                    )
+                    
+                    # Fetch the JSON data with fallback URLs
+                    fallback_urls = self.get_fallback_urls(repo.url)
+                    response = self._fetch_url(repo.url, fallback_urls=fallback_urls)
+                    
+                    # Validate response content
+                    if not self._validate_response_content(response, context):
+                        continue
+                    
+                    data = response.json()
+                    
+                    # Process the data based on the repository type
+                    packages_data = self._process_repository_data(data, repo.type)
+                    
+                    self._package_cache[repo_key] = packages_data
+                    self._save_to_cache(repo_key, packages_data)
+                    
+                    return FetchResult(
+                        success=True,
+                        providers={repo_key: True},
+                        errors={},
+                        cache_hits={}
+                    )
+                    
+                finally:
+                    # Restore the original base_url
+                    self.base_url = original_base_url
+                    
+            except (requests.exceptions.SSLError, ssl.SSLError) as e:
+                # Handle SSL errors with fallback
+                context = ErrorContext(
+                    provider="brew",
+                    url=repo.url,
+                    attempt=attempt,
+                    max_attempts=max_attempts
+                )
+                
+                fallback_response = self.error_handler.handle_ssl_error(e, context)
+                if fallback_response:
+                    try:
+                        data = fallback_response.json()
+                        packages_data = self._process_repository_data(data, repo.type)
+                        self._package_cache[repo_key] = packages_data
+                        self._save_to_cache(repo_key, packages_data)
+                        
+                        return FetchResult(
+                            success=True,
+                            providers={repo_key: True},
+                            errors={},
+                            cache_hits={}
+                        )
+                    except Exception as parse_error:
+                        logger.warning(f"Failed to parse SSL fallback response: {parse_error}")
+                
+                if attempt == max_attempts:
+                    return FetchResult(
+                        success=False,
+                        providers={repo_key: False},
+                        errors={repo_key: f"SSL error: {str(e)}"},
+                        cache_hits={}
+                    )
+                    
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, 
+                    requests.exceptions.HTTPError) as e:
+                # Handle network errors
+                context = ErrorContext(
+                    provider="brew",
+                    url=repo.url,
+                    attempt=attempt,
+                    max_attempts=max_attempts
+                )
+                
+                network_result = self.error_handler.handle_network_error(e, context)
+                if attempt == max_attempts:
+                    return network_result
+                    
+            except Exception as e:
+                # Handle malformed data or other errors
+                if "json" in str(e).lower() or "parse" in str(e).lower():
+                    context = ErrorContext(
+                        provider="brew",
+                        url=repo.url,
+                        attempt=attempt,
+                        max_attempts=max_attempts
+                    )
+                    
+                    # Try to handle malformed JSON
+                    try:
+                        response = self._fetch_url(repo.url)
+                        parsed_data = self.error_handler.handle_malformed_data(
+                            response.content, "json", context
+                        )
+                        if parsed_data:
+                            packages_data = self._process_repository_data(parsed_data, repo.type)
+                            self._package_cache[repo_key] = packages_data
+                            self._save_to_cache(repo_key, packages_data)
+                            
+                            return FetchResult(
+                                success=True,
+                                providers={repo_key: True},
+                                errors={},
+                                cache_hits={}
+                            )
+                    except Exception:
+                        pass
+                
+                if attempt == max_attempts:
+                    return FetchResult(
+                        success=False,
+                        providers={repo_key: False},
+                        errors={repo_key: f"Error: {str(e)}"},
+                        cache_hits={}
+                    )
+        
+        # Should not reach here, but just in case
+        return FetchResult(
+            success=False,
+            providers={repo_key: False},
+            errors={repo_key: "Max retries exceeded"},
+            cache_hits={}
+        )
+    
+    def _validate_response_content(self, response: 'requests.Response', context: ErrorContext) -> bool:
+        """
+        Validate response content before processing.
+        
+        Args:
+            response: HTTP response object.
+            context: Error context.
+            
+        Returns:
+            True if content is valid, False otherwise.
+        """
+        # Check content type
+        content_type = response.headers.get('content-type', '').lower()
+        if 'application/json' not in content_type and 'text/json' not in content_type:
+            logger.warning(f"Unexpected content type for {context.url}: {content_type}")
+        
+        # Check content length
+        if len(response.content) == 0:
+            logger.warning(f"Empty response from {context.url}")
+            return False
+        
+        # Basic JSON validation
+        try:
+            response.json()
+            return True
+        except ValueError as e:
+            logger.warning(f"Invalid JSON response from {context.url}: {e}")
+            return False
