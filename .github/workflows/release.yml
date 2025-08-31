@@ -143,7 +143,7 @@ jobs:
         awk '/^## \[${{ steps.version.outputs.VERSION }}\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md > release_notes.md
     
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         name: Release v${{ steps.version.outputs.VERSION }}
         body_path: release_notes.md
