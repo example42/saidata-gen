@@ -84,7 +84,7 @@ jobs:
     
     steps:
     - name: Download distributions
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v5
       with:
         name: distributions
         path: dist/
@@ -104,7 +104,7 @@ jobs:
     
     steps:
     - name: Download distributions
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v5
       with:
         name: distributions
         path: dist/
@@ -127,7 +127,7 @@ jobs:
         fetch-depth: 0
     
     - name: Download distributions
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v5
       with:
         name: distributions
         path: dist/
